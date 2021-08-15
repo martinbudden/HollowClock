@@ -2,6 +2,7 @@ include <../global_defs.scad>
 
 include <NopSCADlib/core.scad>
 use <NopSCADlib/utils/fillet.scad>
+use <NopSCADlib/utils/hanging_hole.scad>
 include <NopSCADlib/vitamins/geared_steppers.scad>
 include <NopSCADlib/vitamins/pcbs.scad>
 
@@ -12,11 +13,39 @@ use <Clock.scad>
 
 baseSize = _baseSize;
 footSize = _footSize;
-footBoltOffset = 5;
+sideThickness = 5;
+footBoltOffset = [10, 5];
 baseBoltOffset = 5;
-picoOffsets = [ [9, 0, 1], [30, 0, 1] ];
+picoOffsets = [ [9, -2, 1], [30, -2, 1] ];
 //ZC_A0591_offset = [-33, 5, 0];
-ZC_A0591_offset = [-38.5, -6, 0];
+ZC_A0591_offset = [-37, -7, 0];
+
+ZC_A0591_X = ["ZC_A0591", "ZC-A0591 ULN2003 driver PCB",
+    34.5, 32, 1.6,
+    0, 2.5, 0, "green", false,
+     [[2.5, 2.5], [-2.5, 2.5], [2.5, -2.5], [-2.5, -2.5] ],
+    [ [ 11.725, 8.3,  -90, "jst_xh", 5],
+      [ -6.5,  10,      0, "2p54header", 1, 4],
+      [ 20.4,  -4.5,    0, "2p54header", 4, 1],
+      [ 20.4,  11,  180, "pdip", 16, "ULN2803AN", true],
+      [  5.5,  6,       0, "led", LED3mm, [1,1,1, 0.5]],
+      [  5.5,  10.5,    0, "led", LED3mm, [1,1,1, 0.5]],
+      [  5.5,  15,      0, "led", LED3mm, [1,1,1, 0.5]],
+      [  5.5,  19.5,    0, "led", LED3mm, [1,1,1, 0.5]],
+      for(i = [0 : 3]) [5.5 + inch(0.1) * i, -5.5, -90, "ax_res", res1_8, 510, 5, 5.5]
+
+    ], [], [], [], M2p5_pan_screw];
+
+
+
+module boltHoleHangingCounterbore(screw_type, length, boreDepth = undef, boltHeadTolerance = 0) {
+    hanging_hole(is_undef(boreDepth) ? screw_head_height(screw_type) : boreDepth, ir = screw_clearance_radius(screw_type), h = length)
+        poly_circle(r = screw_head_radius(screw_type) + boltHeadTolerance);
+}
+
+module boltHoleM3HangingCounterbore(length, boreDepth = undef, boltHeadTolerance = 0) {
+    boltHoleHangingCounterbore(M3_cap_screw, length=length, boreDepth=boreDepth, boltHeadTolerance=boltHeadTolerance);
+}
 
 module baseTop(fillet=2) {
     difference() {
@@ -32,23 +61,55 @@ module baseTop(fillet=2) {
     }
 }
 
-module foot(fillet=2) {
-    translate([-baseSize.x/2, baseSize.y - footSize.y, 0])
-        difference() {
-            rounded_cube_xy(footSize, fillet);
-            for (x = [footBoltOffset, footSize.x - footBoltOffset])
-                translate([x, footBoltOffset, 0])
-                    screw_polysink(M3_cs_cap_screw, 2*footSize.z + 2*eps, sink = 0.2);
-            picoSize = pcb_size(RPI_Pico);
-            for (picoOffset = picoOffsets)
-                translate(picoOffset + [picoSize.x/2, (picoSize.y + footSize.y)/2 - baseSize.y, footSize.z - picoOffset.z])
-                    pcb_hole_positions(RPI_Pico)
-                        vflip()
-                            boltHole(M2_tap_radius*2, 4, twist=4);
+module Cover_stl() {
+    size = [footSize.x, footSize.y, 5];
+    fillet = 2;
+
+    stl("Cover")
+        translate([-size.x/2, 0, 0]) {
+            difference() {
+                cube(size);
+                translate_z(-eps)
+                    fillet(fillet, size.z + 2*eps);
+                translate([size.x, 0, -eps])
+                    rotate(90)
+                        fillet(fillet, size.z + 2*eps);
+            }
+            translate([sideThickness, 0, 0])
+                cube([footSize.x - 2*sideThickness, 5, baseSize.z]);
         }
 }
 
-module Base_stl() {
+module foot(fillet=2) {
+    translate([-baseSize.x/2, -footSize.y, 0]) {
+        difference() {
+            union() {
+                rounded_cube_xy([footSize.x, baseSize.y + footSize.y, footSize.z], fillet);
+                *cube([sideThickness, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
+                *translate([footSize.x - sideThickness, 0, 0])
+                    cube([sideThickness, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
+            }
+            translate_z(-eps)
+                fillet(fillet, baseSize.z + 2*eps);
+            translate([footSize.x, 0, -eps])
+                rotate(90)
+                    fillet(fillet, baseSize.z + 2*eps);
+            *for (x = [footBoltOffset.x, footSize.x - footBoltOffset.x])
+                translate([x, footBoltOffset.y, 0])
+                    screw_polysink(M3_cs_cap_screw, 2*footSize.z + 2*eps, sink = 0.2);
+                    //boltHoleM3HangingCounterbore(footSize.z);
+
+            picoSize = pcb_size(RPI_Pico);
+            for (picoOffset = picoOffsets)
+                translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z])
+                    pcb_hole_positions(RPI_Pico)
+                        vflip()
+                            boltHole(M2_tap_radius*2, 4, twist=0);
+        }
+    }
+}
+
+module Base_stl(foot=true) {
     fillet = 2;
 
     *translate([0, 13.97, 29.77])
@@ -65,7 +126,8 @@ module Base_stl() {
 
     color(pp4_colour)
         stl("Base") {
-            foot(fillet);
+            if (foot)
+                foot(fillet);
             //rotate([2, 0, 0])
             difference() {
                 union() {
@@ -74,27 +136,31 @@ module Base_stl() {
                     translate([-baseSize.x/2, 0, 0])
                         rounded_cube_xy(baseSize, fillet);
                 }
-                for (x = [-1, 1])
+                *for (x = [-1, 1])
                     translate([x * (baseSize.x/2 - baseBoltOffset), 0, baseSize.z - baseBoltOffset])
                         rotate([90, 0, 180])
                             boltHole(M3_tap_radius*2, 8, horizontal=true, chamfer_both_ends=false);
                 translate_z(driveGearPosZ()) {
+                    translate([idlerGearOffset(), 0, 0])
+                        rotate([90, 0, 180]) {
+                            boltHole(M3_tap_radius*2, baseSize.y - 1.5, horizontal=true, chamfer_both_ends=false);
+                            boltHole(M3_clearance_radius*2, 10, horizontal=true, chamfer_both_ends=false);
+                        }
                     translate([0, -eps, -0.25]) {
                         size = [gs_boss_d(28BYJ_48), 8, 25];
                         cutout(size);
                     }
                     translate([0, clockOffsetY() + _clockFaceThickness - 0.5, 0]) {
-                        size = [44, gearStackSizeZ()+0.5, 24];
-                            translate([0, -0.5, -2])
-                                cutout(size);
+                        translate([0, -1, -2])
+                            cutout([44, gearStackSizeZ() + 1.5, 24]);
                         translate([idlerGearOffset(), 0, 0]) {
                             rotate([0, -45, 0]) {
                                 translate([0, gearThickness() - 0.5, 0])
                                     cutout([44, gearThickness() + 1, 24]);
                                 translate([0, -1.5, 0])
-                                    cutout([14, gearThickness() +1.5, 28]);
-                                translate([0, -gearThickness() - 2.5, 0])
-                                    cutout([idlerGearShaftDiameter() + 0.5, 8+1, 32]);
+                                    cutout([14, gearThickness() + 1.5, 28]);
+                                translate([0, 5.75 - idlerGearShaftLength(), 0])
+                                    cutout([idlerGearShaftDiameter() + 0.5, idlerGearShaftLength(), 32]);
                             }
                         }
                     }
@@ -103,9 +169,10 @@ module Base_stl() {
                             vflip()
                                 boltHole(M3_tap_radius*2, 5.5, horizontal=true, rotate=180, chamfer_both_ends=false);
                     translate(ZC_A0591_offset)
-                        pcb_hole_positions(ZC_A0591)
-                            vflip()
-                                boltHole(M3_tap_radius*2, 6, horizontal=true, rotate=180, chamfer_both_ends=false);
+                        rotate(-90)
+                            pcb_hole_positions(ZC_A0591_X)
+                                vflip()
+                                    boltHole(M3_tap_radius*2, 6, horizontal=true, rotate=180, chamfer_both_ends=false);
                     }
                 }
                 translate([0, clockOffsetY() - baseTopTolerance()/2, clockPosZ()])
@@ -120,6 +187,9 @@ module Base_assembly()
 assembly("Base") {
     stl_colour(pp4_colour)
         Base_stl();
+    *translate([0, -footSize.y, baseSize.z + footSize.z])
+        hflip()
+            Cover_stl();
     Gears_assembly();
     translate_z(driveGearPosZ())
         rotate([90, 0, 0]) {
@@ -128,15 +198,17 @@ assembly("Base") {
             //translate([gs_pitch(28BYJ_48)/2, -gs_offset(28BYJ_48), gs_lug_t(28BYJ_48)])
                 translate_z(gs_lug_t(28BYJ_48))
                     screw(M3_dome_screw, 6);
-            translate(ZC_A0591_offset + [0, 0, gs_lug_t(28BYJ_48)]) {
-                pcb(ZC_A0591);
-                pcb_screw_positions(ZC_A0591)
-                    translate_z(pcb_size(ZC_A0591).z)
-                        screw(M3_dome_screw, 8);
-            }
+            translate(ZC_A0591_offset + [0, 0, gs_lug_t(28BYJ_48)]) 
+                rotate (-90) {
+                    pcb(ZC_A0591_X);
+                    *pcb_screw_positions(ZC_A0591_X)
+                        translate_z(pcb_size(ZC_A0591_X).z)
+                            screw(M3_dome_screw, 8);
+                }
         }
     picoSize = pcb_size(RPI_Pico);
-    translate(picoOffsets[0] + [(picoSize.x - footSize.x)/2, (picoSize.y - footSize.y)/2, footSize.z]) {
+    //#translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z])
+    translate(picoOffsets[0] + [(picoSize.x - footSize.x)/2, -picoSize.y/2, footSize.z]) {
         pcb(RPI_Pico);
         pcb_screw_positions(RPI_Pico)
             translate_z(picoSize.z)
