@@ -3,7 +3,6 @@ include <../global_defs.scad>
 include <NopSCADlib/core.scad>
 use <NopSCADlib/utils/fillet.scad>
 use <NopSCADlib/utils/gears.scad>
-use <NopSCADlib/utils/tube.scad>
 include <NopSCADlib/vitamins/geared_steppers.scad>
 
 include <../target.scad>
@@ -17,16 +16,16 @@ pa = 20; // [14.5, 20, 22.5, 25]
 
 handsToothCount = 120;
 driveToothCount = handsToothCount/4;
+idlerToothCount = 28;
+
 gearTolerance = 0.1;
 driveGearOffset = centre_distance(m, handsToothCount, driveToothCount, pa) + gearTolerance;
 function driveGearPosZ() = clockPosZ() - driveGearOffset;
 function idlerGearOffset() = centre_distance(m, 10, 28, pa);
 function idlerGearShaftDiameter() = 7.5;
-function idlerGearShaftLength() = 11;
+function idlerGearShaftLength() = 9;
 
-driveShaftRadius = 8/2;
-idlerToothCount = 28;
-hourGearCenterRadius = driveShaftRadius + 0.25;
+driveShaftRadius = (gs_boss_d(28BYJ_48) - 0.5)/2;
 faceThickness = _clockFaceThickness;
 function baseTopTolerance() = 1.2;// + 3.8 + eps;
 function clockOffsetY() = (_baseSize.y - faceThickness*3)/2;
@@ -54,12 +53,26 @@ module boltHole(diameter, length, horizontal = false, rotate = 0, chamfer = 0, c
             poly_cylinder(r = diameter/2, h = length + 2*eps, twist = twist);
 }
 
-module gear(teeth, centerRadius=0, thickness=gearThickness) {
-    linear_extrude(thickness, center = false, convexity = 4)
+module gear(toothCount, centerRadius=0, thickness=gearThickness, recessDepth=0) {
+    linear_extrude(thickness - recessDepth, center = false, convexity = 4)
         difference() {
-            involute_gear_profile(m, teeth, pa);
+            involute_gear_profile(m, toothCount, pa);
             if (centerRadius)
-                circle(r=centerRadius);
+                circle(r=centerRadius, $fn = toothCount > 60 ? 360 : r2sides4n(centerRadius));
+        }
+    base_d = toothCount * m * cos(pa);
+    if (recessDepth)
+        translate_z(thickness - recessDepth) {
+            linear_extrude(recessDepth/2, center = false, convexity = 4)
+                difference() {
+                    involute_gear_profile(m, toothCount, pa);
+                    circle(d=base_d - 3);
+                }
+            linear_extrude(recessDepth, center = false, convexity = 4)
+                difference() {
+                    circle(d=base_d - 1);
+                    circle(d=base_d - 3);
+                }
         }
 }
 
@@ -67,22 +80,31 @@ module shaftCutout(height) {
     translate_z(-eps)
         difference() {
             poly_cylinder(r=5/2, h=height + 2*eps);
-            for (x = [1.5, -1.5 - 3])
-                translate([x, -3, -eps])
-                    cube([3, 6, height + 4*eps]);
+            cubeSize = [3, 6, height + 4*eps];
+            offset = 1.55;
+            for (x = [offset, -offset - cubeSize.x])
+                translate([x, -cubeSize.y/2, -eps])
+                    cube(cubeSize);
         }
 }
 
 module Drive_Gear_stl() {
     color(pp2_colour)
         stl("Drive_Gear") {
-            gear(driveToothCount);
-            translate_z(gearThickness)
-                gear(10, centerRadius=5/2, thickness=3.5);
+            totalHeight = 14.5;
+            recessDepth = 0.5;
             difference() {
-                cylinder(d=(gs_boss_d(28BYJ_48)-0.5), h =14.5, center=false);
-                translate_z(gearThickness + 3.5)
-                    shaftCutout(8);
+                union() {
+                    gear(driveToothCount, recessDepth=recessDepth);
+                    translate_z(gearThickness-recessDepth) {
+                        bossHeight = 0.25;
+                        gear(10, centerRadius=5/2, thickness=3.5 + recessDepth - bossHeight);
+                        cylinder(r=driveShaftRadius + 1.25, h=3.5 + recessDepth, center=false);
+                    }
+                    cylinder(r=driveShaftRadius, h=totalHeight, center=false);
+                }
+                translate_z(1)
+                    shaftCutout(totalHeight - 1);
                 translate_z(gearThickness + 3.5 + 5)
                     poly_cylinder(r=5/2, h=3 + eps);
             }
@@ -92,19 +114,27 @@ module Drive_Gear_stl() {
 module Idler_Gear_stl() {
     color(pp1_colour)
         stl("Idler_Gear") {
-            rotate(180/idlerToothCount)
-                gear(idlerToothCount);
-            rotate(0.5*180/(idlerToothCount/4))
-                translate_z(gearThickness)
-                    gear(idlerToothCount/4, thickness=3.5);
-            cylinder(r=idlerGearShaftDiameter()/2, h=idlerGearShaftLength());
+            recessDepth = 0.5;
+            difference() {
+                union() {
+                    rotate(180/idlerToothCount)
+                        gear(idlerToothCount, recessDepth=recessDepth);
+                    rotate(0.5*180/(idlerToothCount/4))
+                        translate_z(gearThickness - recessDepth)
+                            gear(idlerToothCount/4, thickness=3.5 + recessDepth);
+                    cylinder(r=idlerGearShaftDiameter()/2, h=idlerGearShaftLength());
+                }
+                translate_z(-eps)
+                    cylinder(r=M3_clearance_radius, h=idlerGearShaftLength() + 2*eps);
+            }
         }
 }
 
 module Hour_Gear_stl() {
+let($show_numbers=true)
     color(pp3_colour)
         stl("Hour_Gear")
-            gear(30, centerRadius=hourGearCenterRadius);
+            gear(30, centerRadius=driveShaftRadius + 0.25, thickness=gearThickness, recessDepth=0.5);
 }
 
 module gears() {
@@ -132,11 +162,19 @@ module tenons(tolerance=0) {
              4 + tolerance/2];
         translate(tenonPos -[tenonSize.x/2, tenonSize.y, 0])
             rounded_cube_xy(tenonSize, tolerance ? 0 : 1);
-        if (tolerance)
-            translate(tenonPos - [0, 3*tenonSize.y/4, 0])
+        if (tolerance && tenonAngle == -30)
+            translate(tenonPos - [0, 8, 0])
                 vflip()
                     boltHole(M3_tap_radius*2, 2, horizontal=true, rotate=180);
     }
+}
+
+module tube(or, ir, h, center = true) {
+    linear_extrude(h, center = center, convexity = 5)
+        difference() {
+            circle(or, $fn=360);
+            circle(ir, $fn=360);
+        }
 }
 
 module Clock_Face_stl() {
@@ -167,7 +205,7 @@ module Clock_Face_stl() {
             // the housing
             housingAngle = 264;
             rotate(-90 + (360 - housingAngle)/2)
-                rotate_extrude(angle=housingAngle) {
+                rotate_extrude(angle=housingAngle, $fn=360) {
                     translate([_clockOD/2 + clockHousingTolerance, 0])
                         square(clockHousingSize);
                     translate([_clockOD/2 - 1, 0])
@@ -180,12 +218,12 @@ module Clock_Face_stl() {
 module Hour_Hand_stl(highlight=false) {
     color(pp2_colour)
         stl("Hour_Hand") {
-            gear(handsToothCount, _clockID/2, faceThickness);
-            translate_z(clockHandRingThickness()/2)
-                if (highlight)
-                    #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness());
-                else
-                    tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness());
+            gear(handsToothCount, _clockID/2, faceThickness - 0.5);
+            tube(or=_clockID/2 + 1, ir=_clockID/2, h=faceThickness, center=false);
+            if (highlight)
+                #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
+            else
+                tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
             rotate(180) {
                 handSize = [_clockOD/2 - 25, 4, 4];
                 translate([0, -handSize.y/2, 0])
@@ -201,12 +239,12 @@ module Hour_Hand_stl(highlight=false) {
 module Minute_Hand_stl(highlight=false) {
     color(pp3_colour)
         stl("Minute_Hand") {
-            gear(handsToothCount, _clockID/2, faceThickness);
-            translate_z(clockHandRingThickness()/2)
-                if (highlight)
-                    #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness());
-                else
-                    tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness());
+            gear(handsToothCount, _clockID/2, faceThickness - 0.5);
+            tube(or=_clockID/2 + 1, ir=_clockID/2, h=faceThickness, center=false);
+            if (highlight)
+                #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
+            else
+                tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
             handSize = [_clockID/2 + 0.5, 4, 4];
             rotate(90)
                 translate([0, -handSize.y/2, 0])
@@ -215,7 +253,7 @@ module Minute_Hand_stl(highlight=false) {
         }
 }
 
-module Clock_Face_assembly(clockFace=true, hourHand=true)
+module Clock_Face_assembly(clockFace=true, hourHand=true, minuteHand=true)
 assembly("Clock_Face") {
     translate([0, clockOffsetY(), clockPosZ() + 4*eps])
         rotate([90, 0, 180]) {
@@ -227,10 +265,11 @@ assembly("Clock_Face") {
                     hflip()
                         stl_colour(pp2_colour)
                             Hour_Hand_stl(highlight=!clockFace);
-            translate_z(3*faceThickness + 2*baseTopTolerance()/4)
-                hflip()
-                    stl_colour(pp3_colour)
-                        Minute_Hand_stl(highlight=!hourHand);
+            if (minuteHand)
+                translate_z(3*faceThickness + 2*baseTopTolerance()/4)
+                    hflip()
+                        stl_colour(pp3_colour)
+                            Minute_Hand_stl(highlight=!hourHand);
         }
 }
 
