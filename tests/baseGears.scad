@@ -12,10 +12,10 @@ include <../scad/target.scad>
 //$pose = 1;
 module Base_test() {
     offset = 5;
-    offset2 = _baseSize.y - 6.6;
     //offset = 6;
     //offset = 10;
     //offset = 13.5;
+    offset2 = _baseSize.y - 6.5;
     difference() {
         Base_stl(foot=false);
         baseSize = _baseSize;
