@@ -4,5 +4,5 @@ _clockOD = 160;
 _clockID = 147.5;
 _clockFaceThickness = 5;
 
-_baseSize = [120, 20, 55];
-_footSize = [_baseSize.x, _baseSize.y + 30, 5];
+_baseSize = [120, 20, 60];
+_footSize = [_baseSize.x, 30, 5];
