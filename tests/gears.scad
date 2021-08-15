@@ -9,7 +9,7 @@ use <../scad/printed/Clock.scad>
 //$pose = 1;
 module Gears_test() {
     translate_z(-gearThickness() + 0.5) {
-        #Hour_Gear_stl();
+        Hour_Gear_stl();
         translate_z(-gearThickness()-3.5)
             Drive_Gear_stl();
         rotate(90)
