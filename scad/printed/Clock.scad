@@ -88,25 +88,43 @@ module shaftCutout(height) {
         }
 }
 
+module driveGear(totalHeight) {
+    recessDepth = 0.5;
+    difference() {
+        union() {
+            gear(driveToothCount, recessDepth=recessDepth);
+            translate_z(gearThickness - recessDepth) {
+                bossHeight = 0.25;
+                gear(10, centerRadius=5/2, thickness=3.5 + recessDepth - bossHeight);
+                cylinder(r=driveShaftRadius + 1.25, h=3.5 + recessDepth, center=false);
+            }
+            cylinder(r=driveShaftRadius, h=totalHeight, center=false);
+        }
+    }
+}
+
 module Drive_Gear_stl() {
     color(pp2_colour)
         stl("Drive_Gear") {
             totalHeight = 14.5;
-            recessDepth = 0.5;
             difference() {
-                union() {
-                    gear(driveToothCount, recessDepth=recessDepth);
-                    translate_z(gearThickness-recessDepth) {
-                        bossHeight = 0.25;
-                        gear(10, centerRadius=5/2, thickness=3.5 + recessDepth - bossHeight);
-                        cylinder(r=driveShaftRadius + 1.25, h=3.5 + recessDepth, center=false);
-                    }
-                    cylinder(r=driveShaftRadius, h=totalHeight, center=false);
-                }
+                driveGear(totalHeight);
                 translate_z(1)
                     shaftCutout(totalHeight - 1);
                 translate_z(gearThickness + 3.5 + 5)
                     poly_cylinder(r=5/2, h=3 + eps);
+            }
+        }
+}
+
+module Drive_Gear_Hex_stl() {
+    color(pp2_colour)
+        stl("Drive_Gear_Hex") {
+            totalHeight = 14.5;
+            difference() {
+                driveGear(totalHeight);
+                translate_z(gearThickness)
+                    cylinder($fn=6, r=5/2, h=totalHeight - gearThickness + eps, center=false);
             }
         }
 }
@@ -138,6 +156,8 @@ let($show_numbers=true)
 }
 
 module gears() {
+    hidden()
+        Drive_Gear_Hex_stl();
     translate_z(-gearThickness() + 0.5) {
         stl_colour(pp3_colour)
             translate_z(0.1)
