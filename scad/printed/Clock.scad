@@ -66,12 +66,12 @@ module gear(toothCount, centerRadius=0, thickness=gearThickness, recessDepth=0) 
             linear_extrude(recessDepth/2, center = false, convexity = 4)
                 difference() {
                     involute_gear_profile(m, toothCount, pa);
-                    circle(d=base_d - 3);
+                    circle(d=base_d - 4);
                 }
             linear_extrude(recessDepth, center = false, convexity = 4)
                 difference() {
                     circle(d=base_d - 1);
-                    circle(d=base_d - 3);
+                    circle(d=base_d - 4);
                 }
         }
 }
@@ -120,7 +120,7 @@ module Drive_Gear_stl() {
 module Drive_Gear_Hex_stl() {
     color(pp2_colour)
         stl("Drive_Gear_Hex") {
-            totalHeight = 14.5;
+            totalHeight = 20;
             difference() {
                 driveGear(totalHeight);
                 translate_z(gearThickness)
