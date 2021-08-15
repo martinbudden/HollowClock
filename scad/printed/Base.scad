@@ -18,7 +18,7 @@ footBoltOffset = [10, 5];
 baseBoltOffset = 5;
 picoOffsets = [ [9, -2, 1], [30, -2, 1] ];
 //ZC_A0591_offset = [-33, 5, 0];
-ZC_A0591_offset = [-37, -7, 0];
+ZC_A0591_offset = [-37, -10, 0];
 
 ZC_A0591_X = ["ZC_A0591", "ZC-A0591 ULN2003 driver PCB",
     34.5, 32, 1.6,
@@ -83,28 +83,59 @@ module Cover_stl() {
 module foot(fillet=2) {
     translate([-baseSize.x/2, -footSize.y, 0]) {
         difference() {
+            coverHeight = 3;
             union() {
                 rounded_cube_xy([footSize.x, baseSize.y + footSize.y, footSize.z], fillet);
-                *cube([sideThickness, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
-                *translate([footSize.x - sideThickness, 0, 0])
-                    cube([sideThickness, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
+                coverDepth = 3;
+                coverOverlap = 2;
+                for (x = [0, footSize.x - sideThickness + coverOverlap])
+                    translate([x, 0, 0])
+                        cube([sideThickness - coverOverlap, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
+                for (x = [0, footSize.x - sideThickness])
+                    translate([x, coverDepth, 0])
+                        cube([sideThickness, baseSize.y + footSize.y - 2*fillet - coverDepth, baseSize.z - coverHeight]);
+                lugSize = [6, 6, 4];
+                lugFillet = 1;
+                translate([0, footSize.y - lugSize.y + lugFillet, baseSize.z - coverHeight - lugSize.z]) {
+                    translate([sideThickness - lugFillet, 0, 0])
+                        hull() {
+                            rounded_cube_xy(lugSize, lugFillet);
+                            translate([0, lugSize.y, -lugSize.x])
+                                cube([eps, eps, eps]);
+                        }
+                    translate([footSize.x - lugSize.x - sideThickness + lugFillet, 0, 0])
+                        hull() {
+                            rounded_cube_xy(lugSize, lugFillet);
+                            translate([lugSize.x, lugSize.y, -lugSize.x])
+                                cube([eps, eps, eps]);
+                        }
+                }
             }
+            coverBoltOffset = [7.5, footSize.y - 2.5];
+            for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
+                translate([x, coverBoltOffset.y, baseSize.z - coverHeight])
+                    vflip()
+                        boltHole(M3_tap_radius*2, 4, twist = 4);
+
             translate_z(-eps)
                 fillet(fillet, baseSize.z + 2*eps);
             translate([footSize.x, 0, -eps])
                 rotate(90)
                     fillet(fillet, baseSize.z + 2*eps);
-            *for (x = [footBoltOffset.x, footSize.x - footBoltOffset.x])
-                translate([x, footBoltOffset.y, 0])
-                    screw_polysink(M3_cs_cap_screw, 2*footSize.z + 2*eps, sink = 0.2);
-                    //boltHoleM3HangingCounterbore(footSize.z);
 
             picoSize = pcb_size(RPI_Pico);
             for (picoOffset = picoOffsets)
-                translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z])
+                translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z]) {
                     pcb_hole_positions(RPI_Pico)
                         vflip()
-                            boltHole(M2_tap_radius*2, 4, twist=0);
+                            boltHole(M2_tap_radius*2, 4, twist=4);
+                    headerCutoutSize = [picoSize.x, 2, 1.5];
+                    for (y = [picoSize.y/2 - 2, -picoSize.y/2 + 2])
+                        translate([-picoSize.x/2, y - headerCutoutSize.y/2, -headerCutoutSize.z + eps])
+                            rounded_cube_xy(headerCutoutSize, 0.5);
+                }
+            translate([2, 2, footSize.z - 2 + eps])
+                rounded_cube_xy([footSize.x - 4, 1, 2]);
         }
     }
 }
@@ -124,13 +155,27 @@ module Base_stl(foot=true) {
         }
     }
 
+    module pivot(r, d) {
+        //translate_z(d)
+        rotate([90, 0, 0])
+            cylinder(r2=r, r1=r+d, h=d, center=false);
+    }
+
     color(pp4_colour)
         stl("Base") {
-            if (foot)
-                foot(fillet);
-            //rotate([2, 0, 0])
+            translate([idlerGearOffset(), baseSize.y - 5.5, driveGearPosZ()])
+                difference() {
+                    d = 1;
+                    pivot(2.25, d);
+                    rotate([90, 0, 0])
+                        boltHole(M3_tap_radius*2, d, horizontal=true, chamfer=0);
+                }
+            translate([0, baseSize.y, driveGearPosZ()])
+                pivot(2, 3.25);
             difference() {
                 union() {
+                    if (foot)
+                        foot(fillet);
                     translate_z(baseSize.z)
                         baseTop(fillet);
                     translate([-baseSize.x/2, 0, 0])
@@ -156,7 +201,7 @@ module Base_stl(foot=true) {
                         translate([idlerGearOffset(), 0, 0]) {
                             rotate([0, -45, 0]) {
                                 translate([0, gearThickness() - 0.5, 0])
-                                    cutout([44, gearThickness() + 1, 24]);
+                                    cutout([44, gearThickness() + 1.5, 24]);
                                 translate([0, -1.5, 0])
                                     cutout([14, gearThickness() + 1.5, 28]);
                                 translate([0, 5.75 - idlerGearShaftLength(), 0])
@@ -179,8 +224,11 @@ module Base_stl(foot=true) {
                     rotate([90, 0, 0])
                         hflip()
                             tenons(tolerance=0.5);
-            }
-        }
+                usbCutoutSize = [9, 12, 9];
+                translate([-baseSize.x/2 - eps, -usbCutoutSize.y/2 + picoOffsets[0].y - pcb_size(RPI_Pico).y/2, footSize.z - 1])
+                    cube(usbCutoutSize);
+            } // end difference
+        } // end stl
 }
 
 module Base_assembly()
@@ -212,6 +260,6 @@ assembly("Base") {
         pcb(RPI_Pico);
         pcb_screw_positions(RPI_Pico)
             translate_z(picoSize.z)
-                screw(M2_cap_screw, 6);
+                screw(M2_cap_screw, 8);
     }
 }
