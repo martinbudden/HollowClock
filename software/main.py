@@ -8,87 +8,91 @@ PIN_B = Pin(7, Pin.OUT) # Pico GPIO7 connected to stepper control pin IN2
 PIN_C = Pin(8, Pin.OUT) # Pico GPIO8 connected to stepper control pin IN3
 PIN_D = Pin(9, Pin.OUT) # Pico GPIO9 connected to stepper control pin IN4
 LED = Pin(25, Pin.OUT) # Pico LED
-PINS_CLOCKWISE = [PIN_D, PIN_C, PIN_B, PIN_A] # pin order for clockwise rotation
-# PINS_ANTI_CLOCKWISE = [PIN_A, PIN_B, PIN_C, PIN_D]
-phase = 0
 
-# half step gives greater precision at the cost of less torque
-SWITCHING_SEQUENCE_HALF_STEP = [
-    [ 0, 0, 0, 1 ],
-    [ 0, 0, 1, 1 ],
-    [ 0, 0, 1, 0 ],
-    [ 0, 1, 1, 0 ],
-    [ 0, 1, 0, 0 ],
-    [ 1, 1, 0, 0 ],
-    [ 1, 0, 0, 0 ],
-    [ 1, 0, 0, 1 ]
-]
+PINS = [PIN_A, PIN_B, PIN_C, PIN_D] # pin order for clockwise rotation
+#PINS_ANTI_CLOCKWISE = [PIN_D, PIN_C, PIN_B, PIN_A]
 
-# full step gives higher torque
-SWITCHING_SEQUENCE_FULL_STEP = [
-    [ 0, 0, 1, 1 ],
-    [ 0, 1, 1, 0 ],
-    [ 1, 1, 0, 0 ],
-    [ 1, 0, 0, 1 ],
-]
+class Stepper_Motor_28BYJ_48:
+    # The 28BYJ-48 has 32 full steps per revolution (so 64 half-steps per revolution).
+    # Gearing is 32/9 * 22/11 * 26/9 * 31/10 = 51584 / 810 = 25792 / 405 (= 63.68395 ~ 64).
+    # So there are 32 * 25792 / 405 (=2037.8864 ~ 2038) full steps per revolution.
+    STEPS_PER_REVOLUTION = 32
+    GEAR_NUMERATOR = 25792
+    GEAR_DENOMINATOR = 405
 
-def rotateMotor(steps):
-    global PINS_CLOCKWISE
-    global phase
-    global SWITCHING_SEQUENCE_HALF_STEP, SWITCHING_SEQUENCE_FULL_STEP
-    global powerSaving
+    # half step gives greater precision at the cost of less torque
+    SWITCHING_SEQUENCE_HALF_STEP = [
+        [ 1, 0, 0, 0 ],
+        [ 1, 1, 0, 0 ],
+        [ 0, 1, 0, 0 ],
+        [ 0, 1, 1, 0 ],
+        [ 0, 0, 1, 0 ],
+        [ 0, 0, 1, 1 ],
+        [ 0, 0, 0, 1 ],
+        [ 1, 0, 0, 1 ]
+    ]
 
-    switchingSequence = SWITCHING_SEQUENCE_FULL_STEP
-    pins = PINS_CLOCKWISE
-    phaseCount = len(switchingSequence)
+    # full step gives higher torque
+    SWITCHING_SEQUENCE_FULL_STEP = [
+        [ 1, 1, 0, 0 ],
+        [ 0, 1, 1, 0 ],
+        [ 0, 0, 1, 1 ],
+        [ 1, 0, 0, 1 ],
+    ]
 
-    if debug:
-        print("phase1={}".format(phase))
-    for step in range(steps):
-        #for i in range(len(pins)):
-        #    pins[i].value(switchingSequence[phase][i])
-        if debug:
-            print("pins=[{},{},{},{}]".format(switchingSequence[phase][0],switchingSequence[phase][1],switchingSequence[phase][2],switchingSequence[phase][3]))
-        for i, pin in enumerate(pins):
-            pin.value(switchingSequence[phase][i])
-        phase = (phase + 1) % phaseCount
-        utime.sleep_ms(10) # wait between phases of stepper for smoothness, 3ms according to datasheet, was 20ms
-        LED.toggle()
-    if debug:
-        print("phase2={}".format(phase))
-
-    # An attempt to save power by switching off motor between ticks.
-    # Unfortunately if anything binds during a tick then when power is turned off
-    # it may spring back, thus loosing steps.
-    if powerSaving:
-        for pin in pins:
+    def __init__(self, pins, led, debug=False, powerSaving=False):
+        self.pins = pins
+        self.led = led
+        self.debug = debug
+        self.powerSaving = powerSaving
+        self.switchingSequence = self.SWITCHING_SEQUENCE_FULL_STEP
+        self.phaseCount = len(self.switchingSequence)
+        self.phase = 0
+        self.timeBetweenStepsMs = 10 # minimum before skipping steps = 3ms
+        self.led.value(0)
+        for pin in self.pins:
             pin.value(0)
-    LED.value(0) # Pico led off
 
-# The 28BYJ-48 has 32 full steps per revolution, alternatively 64 half-steps per revolution.
-# Gearing is 32/9 * 22/11 * 26/9 * 31/10 = 51584 / 810 = 25792 / 405 (= 63.68395).
-# So there are is 32 * 25792 / 405 (=2037.8864 ~ 2038) full steps per revolution.
-# The clock's minute hand is geared 1/4, so one revolution of 28BYJ-48 is 15 minutes, 15*60 seconds.
-# so one second is 32 * 25792 / (405 * 15 * 60) = 8 * 25792 / (405 * 15 * 15) full steps,
-# that is 8 * 51584 / (405 * 15 * 15) half steps.
-GEAR_NUMERATOR = 25792
-GEAR_DENOMINATOR = 405
-def secondsToSteps(seconds):
-    return seconds * 8 * GEAR_NUMERATOR / (GEAR_DENOMINATOR * 15 * 15) # full steps
+    def rotate(self, steps):
+        if self.debug:
+            print("phase1={}".format(self.phase))
+        for step in range(steps):
+            if self.debug:
+                switchingSequence = self.switchingSequence[self.phase]
+                print("pins=[{},{},{},{}]".format(switchingSequence[0], switchingSequence[1], switchingSequence[2], switchingSequence[3]))
+            for i, pin in enumerate(self.pins):
+                pin.value(self.switchingSequence[self.phase][i])
+            self.phase = (self.phase + 1) % self.phaseCount
+            utime.sleep_ms(self.timeBetweenStepsMs)
+            self.led.toggle()
+        self.led.value(0) # Pico led off
+        if self.debug:
+            print("phase2={}".format(self.phase))
+        # An attempt to save power by switching off motor between ticks.
+        # Unfortunately if anything binds during a tick then when power is turned off
+        # it may spring back, thus loosing steps.
+        if self.powerSaving:
+            for pin in self.pins:
+                pin.value(0)
+
+    def revolutionsToSteps(self, revolutions):
+        return revolutions * self.STEPS_PER_REVOLUTION * self.GEAR_NUMERATOR / self.GEAR_DENOMINATOR
 
 
-debug = False
-powerSaving = False
-tickIntervalSeconds = 10 # so hands are moved every 10 seconds
-LED.value(0)
-for pin in PINS_CLOCKWISE:
-    pin.value(0)
-sleep(1)
+# The clock's minute hand is geared 1/4, so one revolution of the 28BYJ-48 is 15 minutes, 15*60 seconds.
+# So one second is 1 / (15 * 60) revolutions.
+def secondsToSteps(stepper, seconds):
+    return stepper.revolutionsToSteps(seconds) / (15 * 60)
+
+
+stepper = Stepper_Motor_28BYJ_48(PINS, LED, debug=False, powerSaving=False)
+sleep(1) # allow Pico to initialise
 startTime = utime.time()
+tickIntervalSeconds = 10 # so hands are moved every 10 seconds
 totalStepsRotated = 0
-if debug:
+if stepper.debug:
     print("startTime={}".format(startTime))
-    print("ss(60)={}".format(secondsToSteps(60)))
+    print("ss(60)={}".format(secondsToSteps(stepper, 60)))
 
 # rotate 10 steps at startup, so clock does not appear dead to user
 #initialRotate = 10
@@ -98,13 +102,13 @@ if debug:
 while True:
     timeNow = utime.time()
     elapsedTime = timeNow - startTime
-    totalStepsRequired = secondsToSteps(elapsedTime)
+    totalStepsRequired = secondsToSteps(stepper, elapsedTime)
     stepsToRotate = int(totalStepsRequired - totalStepsRotated)
-    #if debug:
-     #   print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
-    rotateMotor(stepsToRotate)
+    if stepper.debug:
+        print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
+    stepper.rotate(stepsToRotate)
     totalStepsRotated += stepsToRotate
     toSleep = tickIntervalSeconds - (utime.time() - timeNow)
-    if debug:
+    if stepper.debug:
         print("toSleep={}".format(toSleep))
     utime.sleep(toSleep)
