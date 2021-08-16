@@ -12,13 +12,19 @@ use <Clock.scad>
 
 
 baseSize = _baseSize;
+baseExtraY = 1; // add extraY to avoid print artifacts on front of base
+baseBoltOffset = 5;
 footSize = _footSize;
 sideThickness = 5;
 footBoltOffset = [10, 5];
-baseBoltOffset = 5;
+coverHeight = 3;
+coverDepth = 3;
+coverOverlap = 2;
+coverBoltOffset = [7, footSize.y - 4];
+//coverBoltOffset = [7.5, footSize.y - 2.5];
 picoOffsets = [ [9, -2, 1], [30, -2, 1] ];
 //ZC_A0591_offset = [-33, 5, 0];
-ZC_A0591_offset = [-37, -10, 0];
+ZC_A0591_offset = [-37, -11, 0];
 
 ZC_A0591_X = ["ZC_A0591", "ZC-A0591 ULN2003 driver PCB",
     34.5, 32, 1.6,
@@ -50,57 +56,59 @@ module boltHoleM3HangingCounterbore(length, boreDepth = undef, boltHeadTolerance
 module baseTop(fillet=2) {
     difference() {
         translate([-baseSize.x/2, 0, 0])
-            rounded_cube_xy([baseSize.x, baseSize.y, 25], fillet);
+            rounded_cube_xy([baseSize.x, baseSize.y + baseExtraY, 25], fillet);
         h = 3*_clockFaceThickness + baseTopTolerance();
         translate([0, (baseSize.y + h)/2, clockHousingDiameter()/2])
             rotate([90, 0, 0])
                 cylinder(r=clockHousingDiameter()/2, h = h);
-        translate([0, baseSize.y + eps, clockHousingDiameter()/2])
-            rotate([90, 0, 0])
-                cylinder(r=_clockID/2, h = baseSize.y + 2*eps);
+        translate([0, -eps, clockHousingDiameter()/2])
+            rotate([-90, 0, 0])
+                cylinder(r=_clockID/2, h = baseSize.y + baseExtraY + 2*eps);
     }
 }
 
 module Cover_stl() {
-    size = [footSize.x, footSize.y, 5];
+    size = [footSize.x - 2*sideThickness + 2*coverOverlap, footSize.y, coverHeight];
     fillet = 2;
 
     stl("Cover")
-        translate([-size.x/2, 0, 0]) {
-            difference() {
-                cube(size);
-                translate_z(-eps)
+        difference() {
+            translate([-size.x/2, 0, 0])
+                union() {
+                    cube(size);
+                    translate([0, 2, 0])
+                        cube([size.x, 1, baseSize.z - footSize.z + 1.5]);
+                    cube([size.x, coverDepth, baseSize.z - footSize.z]);
+                }
+            for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
+                translate([x - footSize.x/2, coverBoltOffset.y, 0])
+                    boltHole(M3_clearance_radius*2, size.z, twist=4);
+            *translate_z(-eps)
+                fillet(fillet, size.z + 2*eps);
+            *translate([size.x, 0, -eps])
+                rotate(90)
                     fillet(fillet, size.z + 2*eps);
-                translate([size.x, 0, -eps])
-                    rotate(90)
-                        fillet(fillet, size.z + 2*eps);
-            }
-            translate([sideThickness, 0, 0])
-                cube([footSize.x - 2*sideThickness, 5, baseSize.z]);
         }
 }
 
 module foot(fillet=2) {
     translate([-baseSize.x/2, -footSize.y, 0]) {
         difference() {
-            coverHeight = 3;
             union() {
                 rounded_cube_xy([footSize.x, baseSize.y + footSize.y, footSize.z], fillet);
-                coverDepth = 3;
-                coverOverlap = 2;
                 for (x = [0, footSize.x - sideThickness + coverOverlap])
                     translate([x, 0, 0])
                         cube([sideThickness - coverOverlap, baseSize.y + footSize.y - 2*fillet, baseSize.z]);
                 for (x = [0, footSize.x - sideThickness])
                     translate([x, coverDepth, 0])
                         cube([sideThickness, baseSize.y + footSize.y - 2*fillet - coverDepth, baseSize.z - coverHeight]);
-                lugSize = [7, 7, 4];
+                lugSize = [6, 7, 4];
                 lugFillet = 1;
                 translate([0, footSize.y - lugSize.y + lugFillet, baseSize.z - coverHeight - lugSize.z]) {
                     translate([sideThickness - lugFillet, 0, 0])
                         hull() {
                             rounded_cube_xy(lugSize, lugFillet);
-                            translate([0, lugSize.y, -lugSize.x])
+                            translate([0, lugSize.y, -max(lugSize.x, lugSize.y)])
                                 cube([eps, eps, eps]);
                         }
                     translate([footSize.x - lugSize.x - sideThickness + lugFillet, 0, 0])
@@ -111,7 +119,6 @@ module foot(fillet=2) {
                         }
                 }
             }
-            coverBoltOffset = [7.5, footSize.y - 2.5];
             for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
                 translate([x, coverBoltOffset.y, baseSize.z - coverHeight])
                     vflip()
@@ -134,8 +141,8 @@ module foot(fillet=2) {
                         translate([-picoSize.x/2, y - headerCutoutSize.y/2, -headerCutoutSize.z + eps])
                             rounded_cube_xy(headerCutoutSize, 0.5);
                 }
-            translate([2, 2, footSize.z - 2 + eps])
-                rounded_cube_xy([footSize.x - 4, 1, 2]);
+            translate([2, 1.75, footSize.z - 2 + eps])
+                rounded_cube_xy([footSize.x - 4, 1.25, 2]);
         }
     }
 }
@@ -179,7 +186,7 @@ module Base_stl(foot=true) {
                     translate_z(baseSize.z)
                         baseTop(fillet);
                     translate([-baseSize.x/2, 0, 0])
-                        rounded_cube_xy(baseSize, fillet);
+                        rounded_cube_xy(baseSize + [0, baseExtraY, 0], fillet);
                 }
                 *for (x = [-1, 1])
                     translate([x * (baseSize.x/2 - baseBoltOffset), 0, baseSize.z - baseBoltOffset])
@@ -235,7 +242,9 @@ module Base_assembly()
 assembly("Base") {
     stl_colour(pp4_colour)
         Base_stl();
-    *translate([0, -footSize.y, baseSize.z + footSize.z])
+    hidden()
+        Cover_stl();
+    *translate([0, -footSize.y, baseSize.z + 2*eps])
         hflip()
             Cover_stl();
     Gears_assembly();
