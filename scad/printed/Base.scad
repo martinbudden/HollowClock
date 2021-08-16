@@ -94,7 +94,7 @@ module foot(fillet=2) {
                 for (x = [0, footSize.x - sideThickness])
                     translate([x, coverDepth, 0])
                         cube([sideThickness, baseSize.y + footSize.y - 2*fillet - coverDepth, baseSize.z - coverHeight]);
-                lugSize = [6, 6, 4];
+                lugSize = [7, 7, 4];
                 lugFillet = 1;
                 translate([0, footSize.y - lugSize.y + lugFillet, baseSize.z - coverHeight - lugSize.z]) {
                     translate([sideThickness - lugFillet, 0, 0])
