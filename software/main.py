@@ -33,11 +33,10 @@ class Stepper_Motor_28BYJ_48:
         [ 1, 0, 0, 1 ],
     ]
 
-    def __init__(self, pins, led, debug=False, powerSaving=False):
+    def __init__(self, pins, led, debug=False):
         self.pins = pins
         self.led = led
         self.debug = debug
-        self.powerSaving = powerSaving
         self._switchingSequence = self.SWITCHING_SEQUENCE_FULL_STEP
         self._phaseCount = len(self._switchingSequence)
         self._phase = 0
@@ -65,12 +64,10 @@ class Stepper_Motor_28BYJ_48:
         self.led.value(0) # Pico led off
         if self.debug:
             print("phase2={}".format(self._phase))
-        # An attempt to save power by switching off motor between ticks.
-        # Unfortunately if anything binds during a tick then when power is turned off
-        # it may spring back, thus loosing steps.
-        if self.powerSaving:
-            for pin in self.pins:
-                pin.value(0)
+
+    def powerOff(self):
+        for pin in self.pins:
+            pin.value(0)
 
     def revolutionsToSteps(self, revolutions):
         """Return the number of steps required for the number of revolutions specified."""
@@ -94,7 +91,8 @@ def main():
 
     PINS = [PIN_A, PIN_B, PIN_C, PIN_D] # pin order for clockwise rotation
 
-    stepper = Stepper_Motor_28BYJ_48(PINS, LED, debug=False, powerSaving=False)
+    stepper = Stepper_Motor_28BYJ_48(PINS, LED, debug=False)
+    powerSaving = False
     sleep(1) # allow Pico to initialise
     startTime = utime.time()
     tickIntervalSeconds = 10 # so hands are moved every 10 seconds
@@ -117,6 +115,13 @@ def main():
             print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
         stepper.rotate(stepsToRotate)
         totalStepsRotated += stepsToRotate
+
+        # An attempt to save power by switching off motor between ticks.
+        # Unfortunately if anything binds during a tick then when power is turned off
+        # it may spring back, thus loosing steps.
+        if powerSaving:
+            stepper.powerOff()
+
         toSleep = tickIntervalSeconds - (utime.time() - timeNow)
         if stepper.debug:
             print("toSleep={}".format(toSleep))
