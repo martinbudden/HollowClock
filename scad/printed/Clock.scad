@@ -149,10 +149,12 @@ module Idler_Gear_stl() {
 }
 
 module Hour_Gear_stl() {
-let($show_numbers=true)
     color(pp3_colour)
-        stl("Hour_Gear")
-            gear(30, centerRadius=driveShaftRadius + 0.25, thickness=gearThickness, recessDepth=0.5);
+        stl("Hour_Gear") {
+            centerRadius = driveShaftRadius + 0.25;
+            gear(30, centerRadius=centerRadius, thickness=gearThickness, recessDepth=0.5);
+            tube(or=centerRadius + 2, ir=centerRadius, h=gearThickness + 0.5, center=false);
+        }
 }
 
 module gears() {
