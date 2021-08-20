@@ -78,11 +78,11 @@ class Stepper_Motor_28BYJ_48:
         return revolutions * 2048
 
 
-# The clock's minute hand is geared 1/4, so one revolution of the 28BYJ-48 is 15 minutes, 15*60 seconds.
+# The clock's minute hand is geared 1/4, so one revolution of the 28BYJ-48 is 15 minutes=  15*60 seconds.
 # So one second is 1 / (15 * 60) revolutions.
 def secondsToSteps(stepper, seconds):
     """Return the number of steps required to advance the clock the given number of seconds."""
-    return stepper.revolutionsToSteps(seconds) / (15 * 60)
+    return stepper.revolutionsToSteps(seconds / (15 * 60))
 
 
 def main():
@@ -99,6 +99,9 @@ def main():
     debug = False
 
     stepper = Stepper_Motor_28BYJ_48(PINS, LED)
+    # The clock's minute hand is geared 1/4, so one revolution of the 28BYJ-48 is 15 minutes=  15*60 seconds.
+    # So one second is 1 / (15 * 60) revolutions.
+    secondsPerStepperRevolution = 15 * 60
     motorOffBetweenTicks = False
     sleep(1) # allow Pico to initialise
 
@@ -107,10 +110,12 @@ def main():
     totalStepsRotated = 0
     if debug:
         print("startTime=", startTime)
-        print("ss(60)=", secondsToSteps(stepper, 60))
+        #print("ss(60)=", secondsToSteps(stepper, 60))
+        print("ss(60)=", stepper.revolutionsToSteps(60/secondsPerStepperRevolution))
 
     if calibrate:
-        stepper.rotate(secondsToSteps(stepper, 3*3600))
+        #stepper.rotate(secondsToSteps(stepper, 3*3600))
+        stepper.rotate(stepper.revolutionsToSteps(3))
 
     # rotate 10 steps at startup, so clock does not appear dead to user
     #initialRotate = 10
@@ -120,7 +125,8 @@ def main():
     while True and calibrate == False:
         timeNow = utime.time()
         elapsedTime = timeNow - startTime
-        totalStepsRequired = secondsToSteps(stepper, elapsedTime)
+        #totalStepsRequired = secondsToSteps(stepper, elapsedTime)
+        totalStepsRequired = stepper.revolutionsToSteps(elapsedTime/secondsPerStepperRevolution)
         stepsToRotate = int(totalStepsRequired - stepper.totalStepsRotated)
         if debug:
             print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
