@@ -14,7 +14,9 @@ Thumbs.db
 *.3mf
 times.txt
 
-.vscode/
+.vscode/*.*
+!.vscode/settings.json
+
 scad/target.scad
 scad/bom.scad
 scad/stlimport
