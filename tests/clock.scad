@@ -1,4 +1,4 @@
-//! Display the clockface
+//! Display the clock face
 
 include <NopSCADlib/core.scad>
 

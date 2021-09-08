@@ -11,6 +11,7 @@ include <../scad/target.scad>
 //$pose = 1;
 module Base_test() {
     Base_assembly();
+    //Base_Stage_1_assembly();
 }
 
 if ($preview)
