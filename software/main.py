@@ -1,6 +1,7 @@
 from machine import Pin
 from time import sleep
 import utime
+from micropython import const
 
 
 class Stepper_Motor_28BYJ_48:
@@ -10,9 +11,9 @@ class Stepper_Motor_28BYJ_48:
     # Gearing is 32/9 * 22/11 * 26/9 * 31/10 = 51584 / 810 = 25792 / 405 (= 63.68395 ~ 64).
     # So there are 32 * 25792 / 405 (=2037.8864 ~ 2038) full steps per revolution.
     # See https://lastminuteengineers.com/28byj48-stepper-motor-arduino-tutorial/
-    STEPS_PER_REVOLUTION = 32
-    GEAR_NUMERATOR = 25792
-    GEAR_DENOMINATOR = 405
+    STEPS_PER_REVOLUTION = const(32)
+    GEAR_NUMERATOR = const(25792)
+    GEAR_DENOMINATOR = const(405)
 
     # half step gives greater precision at the cost of less torque
     SWITCHING_SEQUENCE_HALF_STEP = (
@@ -74,7 +75,9 @@ class Stepper_Motor_28BYJ_48:
 
     def revolutionsToSteps(self, revolutions):
         """Return the number of steps required for the number of revolutions specified."""
-        #return revolutions * self.STEPS_PER_REVOLUTION * self.GEAR_NUMERATOR / self.GEAR_DENOMINATOR
+        # return revolutions * self.STEPS_PER_REVOLUTION * self.GEAR_NUMERATOR / self.GEAR_DENOMINATOR
+        # calculated value is 2037.886
+        # However this value gains time with the stepper motor I purchased, using 2048 give correct time.
         return revolutions * 2048
 
 
@@ -110,12 +113,14 @@ def main():
     totalStepsRotated = 0
     if debug:
         print("startTime=", startTime)
+        print("s1=", stepper.revolutionsToSteps(1))        
         #print("ss(60)=", secondsToSteps(stepper, 60))
         print("ss(60)=", stepper.revolutionsToSteps(60/secondsPerStepperRevolution))
 
     if calibrate:
         #stepper.rotate(secondsToSteps(stepper, 3*3600))
-        stepper.rotate(stepper.revolutionsToSteps(3))
+        print("sc=", stepper.revolutionsToSteps(2*4))
+        stepper.rotate(stepper.revolutionsToSteps(2*4))
 
     # rotate 10 steps at startup, so clock does not appear dead to user
     #initialRotate = 10
@@ -132,7 +137,7 @@ def main():
             print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
         stepper.rotate(stepsToRotate, debug)
 
-        # An attempt to save power by switching off motor between ticks.
+        # Experimental feature to save power by switching off motor between ticks.
         # Unfortunately if anything binds during a tick then when power is turned off
         # it may spring back, thus loosing steps.
         if motorOffBetweenTicks:
