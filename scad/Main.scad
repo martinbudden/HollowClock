@@ -13,7 +13,9 @@ include <target.scad>
 use <printed/Base.scad>
 use <printed/Clock.scad>
 
-module main_assembly() assembly("main") {
+module main_assembly()
+rotate(180)
+assembly("main") {
     Base_assembly();
     explode(100)
     translate_z(0)
