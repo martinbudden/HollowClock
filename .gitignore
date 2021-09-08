@@ -41,7 +41,7 @@ HC160/*.html
 HC160/*.md
 # change to !, except for _diff, .stl, and .dxf, once released
 #!HC160/readme.md
-#!HC160/assemblies/main_assembled.png
+!HC160/assemblies/main_assembled.png
 #!HC160/assemblies/*.png
 HC160/assemblies/*_diff.png
 #!HC160/dxfs/*.dxf
