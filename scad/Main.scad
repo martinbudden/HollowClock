@@ -8,13 +8,24 @@ include <global_defs.scad>
 
 include <NopSCADlib/core.scad>
 
+include <target.scad>
+
 use <printed/Base.scad>
 use <printed/Clock.scad>
 
-
 module main_assembly() assembly("main") {
     Base_assembly();
-    Clock_Face_assembly();
+    explode(100)
+    translate_z(0)
+        Clock_Face_assembly();
+    translate([0, -_footSize.y, _baseSize.z + 2*eps]) {
+        explode([0, -100, 20], true) {
+            hflip()
+                stl_colour(coverColor())
+                    Cover_stl();
+            Cover_hardware();
+        }
+    }
 }
 
 if ($preview)

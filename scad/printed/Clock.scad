@@ -157,37 +157,28 @@ module Hour_Gear_stl() {
         }
 }
 
-module gears() {
-    hidden()
-        Drive_Gear_Hex_stl();
-    translate_z(-gearThickness() + 0.5) {
-        stl_colour(pp3_colour)
-            translate_z(0.1)
-                Hour_Gear_stl();
-        translate_z(-gearThickness()-3.5)
-             stl_colour(pp2_colour)
-                Drive_Gear_stl();
-        rotate(gearRotate)
-            translate([0, -idlerGearOffset(), -gearThickness() - 0.25])
-                stl_colour(pp1_colour)
-                    Idler_Gear_stl();
-    }
-    *translate_z(7.5)
-        geared_stepper(28BYJ_48);
-}
-
 module tenons(tolerance=0) {
     for (tenonAngle = [30, -30]) {
         tenonPos = [(_clockID + _clockOD)/4*sin(tenonAngle), -(_clockID + _clockOD)/4*cos(tenonAngle), 0];
-        tenonSize = [5 + tolerance,
+        tenonSize = [6 + tolerance,
             _clockOD/2 + tenonPos.y + 15 + (tolerance ? 2 : 0),
              4 + tolerance/2];
-        translate(tenonPos -[tenonSize.x/2, tenonSize.y, 0])
-            rounded_cube_xy(tenonSize, tolerance ? 0 : 1);
+        translate(tenonPos)
+            difference() {
+                translate([-tenonSize.x/2, -tenonSize.y, 0])
+                    rounded_cube_xy(tenonSize, tolerance ? 0 : 1);
+                if (tolerance==0  && tenonAngle == -30)
+                    translate([0, -8, 0])
+                        boltHole(M3_tap_radius*2, 3.5, twist=4);
+            }
         if (tolerance && tenonAngle == -30)
             translate(tenonPos - [0, 8, 0])
                 vflip()
-                    boltHole(M3_tap_radius*2, 2, horizontal=true, rotate=180);
+                    hull() {
+                        for (y = [0.75, -0.75])
+                            translate([0, y, 0])
+                                boltHole(M3_clearance_radius*2, 2.5 + eps, horizontal=true, rotate=180);
+                    }
     }
 }
 
@@ -277,6 +268,8 @@ module Minute_Hand_stl(highlight=false) {
 
 module Clock_Face_assembly(clockFace=true, hourHand=true, minuteHand=true)
 assembly("Clock_Face") {
+
+    explode = 40;
     translate([0, clockOffsetY(), clockPosZ() + 4*eps])
         rotate([90, 0, 180]) {
             if (clockFace)
@@ -285,18 +278,54 @@ assembly("Clock_Face") {
             if (hourHand)
                 translate_z(2*faceThickness + baseTopTolerance()/4)
                     hflip()
-                        stl_colour(pp2_colour)
-                            Hour_Hand_stl(highlight=!clockFace);
+                        explode(-explode)
+                            stl_colour(pp2_colour)
+                                Hour_Hand_stl(highlight=!clockFace);
             if (minuteHand)
                 translate_z(3*faceThickness + 2*baseTopTolerance()/4)
                     hflip()
-                        stl_colour(pp3_colour)
-                            Minute_Hand_stl(highlight=!hourHand);
+                        explode(-2*explode)
+                            stl_colour(pp3_colour)
+                                Minute_Hand_stl(highlight=!hourHand);
         }
 }
 
+module gears(stepper=true, idler=false) {
+    explode = 20;
+    *hidden()
+        Drive_Gear_Hex_stl();
+    translate_z(-gearThickness() + 0.5) {
+        explode(-explode)
+            stl_colour(pp3_colour)
+                translate_z(0.1)
+                    Hour_Gear_stl();
+        explode(-2*explode)
+            translate_z(-gearThickness()-3.5)
+                 stl_colour(pp2_colour)
+                    Drive_Gear_stl();
+    }
+    if (idler)
+        rotate(gearRotate)
+            translate([0, -idlerGearOffset(), -2*gearThickness() + 0.25])
+                stl_colour(pp1_colour)
+                    Idler_Gear_stl();
+    if (stepper)
+        translate_z(7.5)
+            geared_stepper(28BYJ_48);
+}
+
+module gearIdler() {
+    translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
+        rotate([90, 0, 0])
+            rotate(gearRotate)
+                translate([0, -idlerGearOffset(), -2*gearThickness() + 0.25])
+                    explode([40, 40, 0])
+                    stl_colour(pp1_colour)
+                        Idler_Gear_stl();
+}
+
 module Gears_assembly()
-assembly("gears") {
+assembly("Gears") {
     echo(clockOffsetY=clockOffsetY());
     translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
         rotate([90, 0, 0])

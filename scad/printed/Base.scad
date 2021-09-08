@@ -21,6 +21,8 @@ coverHeight = 3;
 coverDepth = 3;
 coverOverlap = 2;
 coverBoltOffset = [7, footSize.y - 4];
+function coverColor() = [120/255, 120/255, 120/255];
+
 //coverBoltOffset = [7.5, footSize.y - 2.5];
 picoOffsets = [ [9, -2, 1], [30, -2, 1] ];
 //ZC_A0591_offset = [-33, 5, 0];
@@ -29,7 +31,7 @@ ZC_A0591_offset = [-37, -11, 0];
 ZC_A0591_X = ["ZC_A0591", "ZC-A0591 ULN2003 driver PCB",
     34.5, 32, 1.6,
     0, 2.5, 0, "green", false,
-     [[2.5, 2.5], [-2.5, 2.5], [2.5, -2.5], [-2.5, -2.5] ],
+    [ [2.5, 2.5], [-2.5, 2.5], [2.5, -2.5], [-2.5, -2.5] ],
     [ [ 11.725, 8.3,  -90, "jst_xh", 5],
       [ -6.5,  10,      0, "2p54header", 1, 4],
       [ 20.4,  -4.5,    0, "2p54header", 4, 1],
@@ -40,7 +42,9 @@ ZC_A0591_X = ["ZC_A0591", "ZC-A0591 ULN2003 driver PCB",
       [  5.5,  19.5,    0, "led", LED3mm, [1,1,1, 0.5]],
       for(i = [0 : 3]) [5.5 + inch(0.1) * i, -5.5, -90, "ax_res", res1_8, 510, 5, 5.5]
 
-    ], [], [], [], M2p5_pan_screw];
+    ],
+    [], [], [], M2p5_pan_screw
+];
 
 
 
@@ -71,24 +75,31 @@ module Cover_stl() {
     size = [footSize.x - 2*sideThickness + 2*coverOverlap, footSize.y, coverHeight];
     fillet = 2;
 
-    stl("Cover")
-        difference() {
-            translate([-size.x/2, 0, 0])
-                union() {
-                    cube(size);
-                    translate([0, 2, 0])
-                        cube([size.x, 1, baseSize.z - footSize.z + 1.5]);
-                    cube([size.x, coverDepth, baseSize.z - footSize.z]);
-                }
-            for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
-                translate([x - footSize.x/2, coverBoltOffset.y, 0])
-                    boltHole(M3_clearance_radius*2, size.z, twist=4);
-            *translate_z(-eps)
-                fillet(fillet, size.z + 2*eps);
-            *translate([size.x, 0, -eps])
-                rotate(90)
+    color(coverColor())
+        stl("Cover")
+            difference() {
+                translate([-size.x/2, 0, 0])
+                    union() {
+                        cube(size);
+                        translate([0, 2, 0])
+                            cube([size.x, 1, baseSize.z - footSize.z + 1.5]);
+                        cube([size.x, coverDepth, baseSize.z - footSize.z]);
+                    }
+                for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
+                    translate([x - footSize.x/2, coverBoltOffset.y, 0])
+                        boltHole(M3_clearance_radius*2, size.z, twist=4);
+                *translate_z(-eps)
                     fillet(fillet, size.z + 2*eps);
-        }
+                *translate([size.x, 0, -eps])
+                    rotate(90)
+                        fillet(fillet, size.z + 2*eps);
+            }
+}
+
+module Cover_hardware() {
+    for (x = [coverBoltOffset.x, footSize.x - coverBoltOffset.x])
+        translate([x - footSize.x/2, coverBoltOffset.y, 0])
+            screw(M3_dome_screw, 8);
 }
 
 module foot(fillet=2) {
@@ -102,7 +113,7 @@ module foot(fillet=2) {
                 for (x = [0, footSize.x - sideThickness])
                     translate([x, coverDepth, 0])
                         cube([sideThickness, baseSize.y + footSize.y - 2*fillet - coverDepth, baseSize.z - coverHeight]);
-                lugSize = [6, 7, 4];
+                lugSize = [6, footSize.y - coverBoltOffset.y + 3.5, 4];
                 lugFillet = 1;
                 translate([0, footSize.y - lugSize.y + lugFillet, baseSize.z - coverHeight - lugSize.z]) {
                     translate([sideThickness - lugFillet, 0, 0])
@@ -227,7 +238,7 @@ module Base_stl(foot=true) {
                                     boltHole(M3_tap_radius*2, 6, horizontal=true, rotate=180, chamfer_both_ends=false);
                     }
                 }
-                translate([0, clockOffsetY() - baseTopTolerance()/2, clockPosZ()])
+                translate([0, clockOffsetY(), clockPosZ()])
                     rotate([90, 0, 0])
                         hflip()
                             tenons(tolerance=0.5);
@@ -238,31 +249,24 @@ module Base_stl(foot=true) {
         } // end stl
 }
 
-module Base_assembly()
-assembly("Base") {
+module Base_Stage_1_assembly()
+assembly("Base_Stage_1", ngb=true) {
     stl_colour(pp4_colour)
         Base_stl();
-    hidden()
-        Cover_stl();
-    *translate([0, -footSize.y, baseSize.z + 2*eps])
-        hflip()
-            Cover_stl();
-    Gears_assembly();
+    gearIdler();
+    translate([idlerGearOffset(), 0, driveGearPosZ()])
+        rotate([90, 0, 0])
+            screw(M3_cap_screw, 16);
     translate_z(driveGearPosZ())
-        rotate([90, 0, 0]) {
-            geared_stepper(28BYJ_48);
-            geared_stepper_screw_positions(28BYJ_48)
-            //translate([gs_pitch(28BYJ_48)/2, -gs_offset(28BYJ_48), gs_lug_t(28BYJ_48)])
-                translate_z(gs_lug_t(28BYJ_48))
-                    screw(M3_dome_screw, 6);
-            translate(ZC_A0591_offset + [0, 0, gs_lug_t(28BYJ_48)]) 
-                rotate (-90) {
-                    pcb(ZC_A0591_X);
-                    *pcb_screw_positions(ZC_A0591_X)
-                        translate_z(pcb_size(ZC_A0591_X).z)
-                            screw(M3_dome_screw, 8);
-                }
-        }
+        rotate([90, 0, 0])
+            translate(ZC_A0591_offset + [0, 0, gs_lug_t(28BYJ_48)])
+                explode(5, true)
+                    rotate (-90) {
+                        pcb(ZC_A0591_X);
+                        pcb_screw_positions(ZC_A0591_X)
+                            translate_z(pcb_size(ZC_A0591_X).z)
+                                screw(M3_dome_screw, 8);
+                    }
     picoSize = pcb_size(RPI_Pico);
     //#translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z])
     translate(picoOffsets[0] + [(picoSize.x - footSize.x)/2, -picoSize.y/2, footSize.z]) {
@@ -271,4 +275,18 @@ assembly("Base") {
             translate_z(picoSize.z)
                 screw(M2_cap_screw, 8);
     }
+}
+
+module Base_assembly()
+assembly("Base") {
+    Base_Stage_1_assembly();
+    explode(50)
+        Gears_assembly();
+    translate_z(driveGearPosZ())
+    rotate([90, 0, 0])
+        //geared_stepper(28BYJ_48);
+        geared_stepper_screw_positions(28BYJ_48)
+        //translate([gs_pitch(28BYJ_48)/2, -gs_offset(28BYJ_48), gs_lug_t(28BYJ_48)])
+            translate_z(gs_lug_t(28BYJ_48))
+                screw(M3_dome_screw, 6);
 }
