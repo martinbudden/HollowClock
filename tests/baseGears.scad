@@ -17,7 +17,7 @@ module Base_test() {
     //offset = 13.5;
     offset2 = _baseSize.y - 6.5;
     difference() {
-        Base_stl(foot=false);
+        Base_stl(main=true, foot=false);
         baseSize = _baseSize;
         if (!is_undef(offset) && offset) {
             translate([-baseSize.x/2 - eps, -eps, -eps])
@@ -26,8 +26,9 @@ module Base_test() {
                 cube([baseSize.x + 2* eps, baseSize.y - offset2 + eps, baseSize.z + 25 + 2*eps]);
         }
     }
-    Gears_assembly();
-    Clock_Face_assembly(clockFace=!true, hourHand=true, minuteHand=true);
+    Gears_assembly(stepper=false, reduction=true, transparent=true);
+    rotate(180)
+        Clock_Face_assembly(clockFace=true, hourHand=true, minuteHand=true, transparent=true);
 }
 
 if ($preview)
