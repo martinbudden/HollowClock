@@ -24,7 +24,7 @@ coverBoltOffset = [7, footSize.y - 4];
 function coverColor() = [120/255, 120/255, 120/255];
 
 //coverBoltOffset = [7.5, footSize.y - 2.5];
-picoOffsets = [ [9, -2, 1], [30, -2, 1] ];
+picoOffsets = [ [9, -2, 1] ];//, [30, -2, 1] ];
 //ZC_A0591_offset = [-33, 5, 0];
 ZC_A0591_offset = [-37, -11, 0];
 
@@ -158,7 +158,7 @@ module foot(fillet=2) {
     }
 }
 
-module Base_stl(foot=true) {
+module Base_stl(main=true, foot=true) {
     fillet = 2;
 
     *translate([0, 13.97, 29.77])
@@ -181,7 +181,7 @@ module Base_stl(foot=true) {
 
     color(pp4_colour)
         stl("Base") {
-            translate([idlerGearOffset(), baseSize.y - 5.5, driveGearPosZ()])
+            translate([reductionGearOffset(), baseSize.y - 5.5, driveGearPosZ()])
                 difference() {
                     d = 1;
                     pivot(2.25, d);
@@ -196,15 +196,16 @@ module Base_stl(foot=true) {
                         foot(fillet);
                     translate_z(baseSize.z)
                         baseTop(fillet);
-                    translate([-baseSize.x/2, 0, 0])
-                        rounded_cube_xy(baseSize + [0, baseExtraY, 0], fillet);
+                    if (main)
+                        translate([-baseSize.x/2, 0, 0])
+                            rounded_cube_xy(baseSize + [0, baseExtraY, 0], fillet);
                 }
                 *for (x = [-1, 1])
                     translate([x * (baseSize.x/2 - baseBoltOffset), 0, baseSize.z - baseBoltOffset])
                         rotate([90, 0, 180])
                             boltHole(M3_tap_radius*2, 8, horizontal=true, chamfer_both_ends=false);
                 translate_z(driveGearPosZ()) {
-                    translate([idlerGearOffset(), 0, 0])
+                    translate([reductionGearOffset(), 0, 0])
                         rotate([90, 0, 180]) {
                             boltHole(M3_tap_radius*2, baseSize.y - 1.5, horizontal=true, chamfer_both_ends=false);
                             boltHole(M3_clearance_radius*2, 10, horizontal=true, chamfer_both_ends=false);
@@ -216,14 +217,14 @@ module Base_stl(foot=true) {
                     translate([0, clockOffsetY() + _clockFaceThickness - 0.5, 0]) {
                         translate([0, -1, -2])
                             cutout([44, gearStackSizeZ() + 1.5, 24]);
-                        translate([idlerGearOffset(), 0, 0]) {
+                        translate([reductionGearOffset(), 0, 0]) {
                             rotate([0, -45, 0]) {
                                 translate([0, gearThickness() - 0.5, 0])
                                     cutout([44, gearThickness() + 1.5, 24]);
                                 translate([0, -1.5, 0])
                                     cutout([14, gearThickness() + 1.5, 28]);
-                                translate([0, 5.75 - idlerGearShaftLength(), 0])
-                                    cutout([idlerGearShaftDiameter() + 0.5, idlerGearShaftLength(), 32]);
+                                translate([0, 5.75 - reductionGearShaftLength(), 0])
+                                    cutout([reductionGearShaftDiameter() + 0.5, reductionGearShaftLength(), 32]);
                             }
                         }
                     }
@@ -242,7 +243,7 @@ module Base_stl(foot=true) {
                     rotate([90, 0, 0])
                         hflip()
                             tenons(tolerance=0.5);
-                usbCutoutSize = [9, 12, 9];
+                usbCutoutSize = [9, 14, 9];
                 translate([-baseSize.x/2 - eps, -usbCutoutSize.y/2 + picoOffsets[0].y - pcb_size(RPI_Pico).y/2, footSize.z - 1])
                     cube(usbCutoutSize);
             } // end difference
@@ -253,8 +254,8 @@ module Base_Stage_1_assembly()
 assembly("Base_Stage_1", ngb=true) {
     stl_colour(pp4_colour)
         Base_stl();
-    gearIdler();
-    translate([idlerGearOffset(), 0, driveGearPosZ()])
+    gearReduction();
+    translate([reductionGearOffset(), 0, driveGearPosZ()])
         rotate([90, 0, 0])
             screw(M3_cap_screw, 16);
     translate_z(driveGearPosZ())
@@ -273,7 +274,7 @@ assembly("Base_Stage_1", ngb=true) {
         pcb(RPI_Pico);
         pcb_screw_positions(RPI_Pico)
             translate_z(picoSize.z)
-                screw(M2_cap_screw, 8);
+                screw(M2_cap_screw, 6);
     }
 }
 

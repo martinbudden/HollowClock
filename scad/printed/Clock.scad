@@ -8,22 +8,22 @@ include <NopSCADlib/vitamins/geared_steppers.scad>
 include <../target.scad>
 
 //  Modulus
-m = 1.3; // [0.1 : 0.1 : 5.0]
+gearModulus = 1.3; // [0.1 : 0.1 : 5.0]
 // Pressure angle
-pa = 20; // [14.5, 20, 22.5, 25]
+gearPressureAngle = 20; // [14.5, 20, 22.5, 25]
 //teeth used: 120, 30, 10, 28, 7
 
 
 handsToothCount = 120;
 driveToothCount = handsToothCount/4;
-idlerToothCount = 28;
+reductionToothCount = 28;
 
 gearTolerance = 0.1;
-driveGearOffset = centre_distance(m, handsToothCount, driveToothCount, pa) + gearTolerance;
+driveGearOffset = centre_distance(gearModulus, handsToothCount, driveToothCount, gearPressureAngle) + gearTolerance;
 function driveGearPosZ() = clockPosZ() - driveGearOffset;
-function idlerGearOffset() = centre_distance(m, 10, 28, pa);
-function idlerGearShaftDiameter() = 7.5;
-function idlerGearShaftLength() = 9;
+function reductionGearOffset() = centre_distance(gearModulus, 10, 28, gearPressureAngle);
+function reductionGearShaftDiameter() = 7.5;
+function reductionGearShaftLength() = 9;
 
 driveShaftRadius = (gs_boss_d(28BYJ_48) - 0.5)/2;
 faceThickness = _clockFaceThickness;
@@ -56,16 +56,16 @@ module boltHole(diameter, length, horizontal = false, rotate = 0, chamfer = 0, c
 module gear(toothCount, centerRadius=0, thickness=gearThickness, recessDepth=0) {
     linear_extrude(thickness - recessDepth, center = false, convexity = 4)
         difference() {
-            involute_gear_profile(m, toothCount, pa);
+            involute_gear_profile(gearModulus, toothCount, gearPressureAngle);
             if (centerRadius)
                 circle(r=centerRadius, $fn = toothCount > 60 ? 360 : r2sides4n(centerRadius));
         }
-    base_d = toothCount * m * cos(pa);
+    base_d = toothCount * gearModulus * cos(gearPressureAngle);
     if (recessDepth)
         translate_z(thickness - recessDepth) {
             linear_extrude(recessDepth/2, center = false, convexity = 4)
                 difference() {
-                    involute_gear_profile(m, toothCount, pa);
+                    involute_gear_profile(gearModulus, toothCount, gearPressureAngle);
                     circle(d=base_d - 4);
                 }
             linear_extrude(recessDepth, center = false, convexity = 4)
@@ -129,21 +129,21 @@ module Drive_Gear_Hex_stl() {
         }
 }
 
-module Idler_Gear_stl() {
+module Reduction_Gear_stl() {
     color(pp1_colour)
-        stl("Idler_Gear") {
+        stl("Reduction_Gear") {
             recessDepth = 0.5;
             difference() {
                 union() {
-                    rotate(180/idlerToothCount)
-                        gear(idlerToothCount, recessDepth=recessDepth);
-                    rotate(0.5*180/(idlerToothCount/4))
+                    rotate(180/reductionToothCount)
+                        gear(reductionToothCount, recessDepth=recessDepth);
+                    rotate(0.5*180/(reductionToothCount/4))
                         translate_z(gearThickness - recessDepth)
-                            gear(idlerToothCount/4, thickness=3.5 + recessDepth);
-                    cylinder(r=idlerGearShaftDiameter()/2, h=idlerGearShaftLength());
+                            gear(reductionToothCount/4, thickness=3.5 + recessDepth);
+                    cylinder(r=reductionGearShaftDiameter()/2, h=reductionGearShaftLength());
                 }
                 translate_z(-eps)
-                    cylinder(r=M3_clearance_radius, h=idlerGearShaftLength() + 2*eps);
+                    cylinder(r=M3_clearance_radius, h=reductionGearShaftLength() + 2*eps);
             }
         }
 }
@@ -266,15 +266,12 @@ module Minute_Hand_stl(highlight=false) {
         }
 }
 
-module Clock_Face_assembly(clockFace=true, hourHand=true, minuteHand=true)
+module Clock_Face_assembly(clockFace=true, hourHand=true, minuteHand=true, transparent=false)
 assembly("Clock_Face") {
 
     explode = 40;
-    translate([0, clockOffsetY(), clockPosZ() + 4*eps])
-        rotate([90, 0, 180]) {
-            if (clockFace)
-                stl_colour(pp1_colour)
-                    Clock_Face_stl();
+    translate([0, -clockOffsetY(), clockPosZ() + 4*eps])
+        rotate([90, 0, 0]) {
             if (hourHand)
                 translate_z(2*faceThickness + baseTopTolerance()/4)
                     hflip()
@@ -287,47 +284,57 @@ assembly("Clock_Face") {
                         explode(-2*explode)
                             stl_colour(pp3_colour)
                                 Minute_Hand_stl(highlight=!hourHand);
+            if (clockFace)
+                if (transparent)
+                    color(pp1_colour, 0.7)
+                        Clock_Face_stl();
+                else
+                    stl_colour(pp1_colour)
+                        Clock_Face_stl();
         }
 }
 
-module gears(stepper=true, idler=false) {
+module gears(stepper=true, reduction=false, transparent=false) {
     explode = 20;
     *hidden()
         Drive_Gear_Hex_stl();
+    if (reduction)
+        rotate(gearRotate)
+            translate([0, -reductionGearOffset(), -2*gearThickness() + 0.25])
+                stl_colour(pp1_colour)
+                    Reduction_Gear_stl();
     translate_z(-gearThickness() + 0.5) {
-        explode(-explode)
-            stl_colour(pp3_colour)
-                translate_z(0.1)
-                    Hour_Gear_stl();
         explode(-2*explode)
             translate_z(-gearThickness()-3.5)
                  stl_colour(pp2_colour)
                     Drive_Gear_stl();
+        explode(-explode)
+            translate_z(0.1)
+                if (transparent)
+                    color(pp3_colour, 0.4)
+                        Hour_Gear_stl();
+                else
+                    stl_colour(pp3_colour)
+                        Hour_Gear_stl();
     }
-    if (idler)
-        rotate(gearRotate)
-            translate([0, -idlerGearOffset(), -2*gearThickness() + 0.25])
-                stl_colour(pp1_colour)
-                    Idler_Gear_stl();
     if (stepper)
         translate_z(7.5)
             geared_stepper(28BYJ_48);
 }
 
-module gearIdler() {
+module gearReduction() {
     translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
         rotate([90, 0, 0])
             rotate(gearRotate)
-                translate([0, -idlerGearOffset(), -2*gearThickness() + 0.25])
+                translate([0, -reductionGearOffset(), -2*gearThickness() + 0.25])
                     explode([40, 40, 0])
                     stl_colour(pp1_colour)
-                        Idler_Gear_stl();
+                        Reduction_Gear_stl();
 }
 
-module Gears_assembly()
+module Gears_assembly(stepper=true, reduction=false, transparent=false)
 assembly("Gears") {
-    echo(clockOffsetY=clockOffsetY());
     translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
         rotate([90, 0, 0])
-            gears();
+            gears(stepper=stepper, reduction=reduction, transparent=transparent);
 }
