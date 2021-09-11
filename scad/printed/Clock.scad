@@ -28,9 +28,10 @@ function reductionGearShaftLength() = 9;
 driveShaftRadius = (gs_boss_d(28BYJ_48) - 0.5)/2;
 faceThickness = _clockFaceThickness;
 function baseTopTolerance() = 1.2;// + 3.8 + eps;
-function clockOffsetY() = (_baseSize.y - faceThickness*3)/2;
 clockHousingTolerance = 0.2;
 clockHousingSize = [1, 3*faceThickness + baseTopTolerance()];
+function clockOffsetYOld() = (_baseSize.y - faceThickness*3)/2;
+function clockOffsetY() = (_baseSize.y - clockHousingSize.y)/2;
 function clockHousingDiameter() = _clockOD;// + clockHousingSize.x + clockHousingTolerance;
 function clockPosZ() = _baseSize.z + clockHousingDiameter()/2;
 
@@ -41,16 +42,15 @@ gearRotate = 90;
 function gearStackSizeZ() = 2*gearThickness + 4;
 
 
-module boltHole(diameter, length, horizontal = false, rotate = 0, chamfer = 0, chamfer_both_ends = true, cnc = false, twist = 0) {
+module boltHole(diameter, length, horizontal=false, rotate=0, chamfer=0, chamfer_both_ends=true, cnc=false, twist=undef) {
     translate_z(-eps)
         if (cnc)
-            cylinder(r = diameter/2, h = length + 2*eps);
+            cylinder(r=diameter/2, h=length + 2*eps);
         else if (horizontal)
             rotate(rotate)
-                teardrop(length + 2*eps, diameter/2, center=false, chamfer=chamfer, chamfer_both_ends = chamfer_both_ends);
-
+                teardrop(length + 2*eps, diameter/2, center=false, chamfer=chamfer, chamfer_both_ends=chamfer_both_ends);
         else
-            poly_cylinder(r = diameter/2, h = length + 2*eps, twist = twist);
+            poly_cylinder(r=diameter/2, h=length + 2*eps, twist=is_undef(twist) ? (diameter > 3.5 ? 0 : 4) : twist);
 }
 
 module gear(toothCount, centerRadius=0, thickness=gearThickness, recessDepth=0) {
@@ -169,7 +169,7 @@ module tenons(tolerance=0) {
                     rounded_cube_xy(tenonSize, tolerance ? 0 : 1);
                 if (tolerance==0  && tenonAngle == -30)
                     translate([0, -8, 0])
-                        boltHole(M3_tap_radius*2, 3.5, twist=4);
+                        boltHole(M3_tap_radius*2, 3.5);
             }
         if (tolerance && tenonAngle == -30)
             translate(tenonPos - [0, 8, 0])
@@ -300,12 +300,12 @@ module gears(stepper=true, reduction=false, transparent=false) {
         Drive_Gear_Hex_stl();
     if (reduction)
         rotate(gearRotate)
-            translate([0, -reductionGearOffset(), -2*gearThickness() + 0.25])
+            translate([0, -reductionGearOffset(), -2*gearThickness + 0.25])
                 stl_colour(pp1_colour)
                     Reduction_Gear_stl();
-    translate_z(-gearThickness() + 0.5) {
+    translate_z(-gearThickness + 0.5) {
         explode(-2*explode)
-            translate_z(-gearThickness()-3.5)
+            translate_z(-gearThickness-3.5)
                  stl_colour(pp2_colour)
                     Drive_Gear_stl();
         explode(-explode)
@@ -322,19 +322,27 @@ module gears(stepper=true, reduction=false, transparent=false) {
             geared_stepper(28BYJ_48);
 }
 
-module gearReduction() {
-    translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
+module gearReductionOld() {
+    translate([0, clockOffsetYOld() + faceThickness, driveGearPosZ()])
         rotate([90, 0, 0])
             rotate(gearRotate)
-                translate([0, -reductionGearOffset(), -2*gearThickness() + 0.25])
+                translate([0, -reductionGearOffset(), -2*gearThickness + 0.25])
                     explode([40, 40, 0])
                     stl_colour(pp1_colour)
                         Reduction_Gear_stl();
 }
 
+module gearReduction() {
+    translate([reductionGearOffset(), clockOffsetY() + 0.25 + faceThickness + 2*gearThickness, driveGearPosZ()])
+        explode([-40, 0, 40])
+            rotate([90, -gearRotate, 0])
+                stl_colour(pp1_colour)
+                    Reduction_Gear_stl();
+}
+
 module Gears_assembly(stepper=true, reduction=false, transparent=false)
 assembly("Gears") {
-    translate([0, clockOffsetY() + faceThickness, driveGearPosZ()])
+    translate([0, clockOffsetY() + 0.5 + faceThickness, driveGearPosZ()])
         rotate([90, 0, 0])
             gears(stepper=stepper, reduction=reduction, transparent=transparent);
 }
