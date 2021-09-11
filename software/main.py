@@ -17,22 +17,22 @@ class Stepper_Motor_28BYJ_48:
 
     # half step gives greater precision at the cost of less torque
     SWITCHING_SEQUENCE_HALF_STEP = (
-        ( 1, 0, 0, 0 ),
-        ( 1, 1, 0, 0 ),
-        ( 0, 1, 0, 0 ),
-        ( 0, 1, 1, 0 ),
-        ( 0, 0, 1, 0 ),
-        ( 0, 0, 1, 1 ),
-        ( 0, 0, 0, 1 ),
-        ( 1, 0, 0, 1 )
+        (1, 0, 0, 0),
+        (1, 1, 0, 0),
+        (0, 1, 0, 0),
+        (0, 1, 1, 0),
+        (0, 0, 1, 0),
+        (0, 0, 1, 1),
+        (0, 0, 0, 1),
+        (1, 0, 0, 1),
     )
 
     # full step gives higher torque
     SWITCHING_SEQUENCE_FULL_STEP = (
-        ( 1, 1, 0, 0 ),
-        ( 0, 1, 1, 0 ),
-        ( 0, 0, 1, 1 ),
-        ( 1, 0, 0, 1 ),
+        (1, 1, 0, 0),
+        (0, 1, 1, 0),
+        (0, 0, 1, 1),
+        (1, 0, 0, 1),
     )
 
     def __init__(self, pins, led=None):
@@ -42,7 +42,7 @@ class Stepper_Motor_28BYJ_48:
         self._phaseCount = len(self._switchingSequence)
         self._phase = 0
         self.totalStepsRotated = 0
-        self.timeBetweenStepsMs = 10 # minimum before skipping steps = 3ms
+        self.timeBetweenStepsMs = 10  # minimum before skipping steps = 3ms
         self.led.value(0)
         for pin in self.pins:
             pin.value(0)
@@ -64,7 +64,7 @@ class Stepper_Motor_28BYJ_48:
             if self.led is not None:
                 self.led.toggle()
         if self.led is not None:
-            self.led.value(0) # Pico led off
+            self.led.value(0)  # Pico led off
         if debug:
             print("phase2=", self._phase)
         self.totalStepsRotated += steps
@@ -90,13 +90,13 @@ def secondsToSteps(stepper, seconds):
 
 def main():
     # pin assignment
-    PIN_A = Pin(6, Pin.OUT) # Pico GPIO6 connected to stepper control pin IN1
-    PIN_B = Pin(7, Pin.OUT) # Pico GPIO7 connected to stepper control pin IN2
-    PIN_C = Pin(8, Pin.OUT) # Pico GPIO8 connected to stepper control pin IN3
-    PIN_D = Pin(9, Pin.OUT) # Pico GPIO9 connected to stepper control pin IN4
-    LED = Pin(25, Pin.OUT) # Pico LED
+    PIN_A = Pin(6, Pin.OUT)  # Pico GPIO6 connected to stepper control pin IN1
+    PIN_B = Pin(7, Pin.OUT)  # Pico GPIO7 connected to stepper control pin IN2
+    PIN_C = Pin(8, Pin.OUT)  # Pico GPIO8 connected to stepper control pin IN3
+    PIN_D = Pin(9, Pin.OUT)  # Pico GPIO9 connected to stepper control pin IN4
+    LED = Pin(25, Pin.OUT)  # Pico LED
 
-    PINS = [PIN_A, PIN_B, PIN_C, PIN_D] # pin order for clockwise rotation
+    PINS = [PIN_A, PIN_B, PIN_C, PIN_D]  # pin order for clockwise rotation
 
     calibrate = False
     debug = False
@@ -106,32 +106,32 @@ def main():
     # So one second is 1 / (15 * 60) revolutions.
     secondsPerStepperRevolution = 15 * 60
     motorOffBetweenTicks = False
-    sleep(1) # allow Pico to initialise
+    sleep(1)  # allow Pico to initialise
 
     startTime = utime.time()
-    tickIntervalSeconds = 10 # so hands are moved every 10 seconds
+    tickIntervalSeconds = 10  # so hands are moved every 10 seconds
     totalStepsRotated = 0
     if debug:
         print("startTime=", startTime)
-        print("s1=", stepper.revolutionsToSteps(1))        
-        #print("ss(60)=", secondsToSteps(stepper, 60))
-        print("ss(60)=", stepper.revolutionsToSteps(60/secondsPerStepperRevolution))
+        print("s1=", stepper.revolutionsToSteps(1))
+        # print("ss(60)=", secondsToSteps(stepper, 60))
+        print("ss(60)=", stepper.revolutionsToSteps(60 / secondsPerStepperRevolution))
 
     if calibrate:
-        #stepper.rotate(secondsToSteps(stepper, 3*3600))
-        print("sc=", stepper.revolutionsToSteps(2*4))
-        stepper.rotate(stepper.revolutionsToSteps(2*4))
+        # stepper.rotate(secondsToSteps(stepper, 3 * 3600))
+        print("sc=", stepper.revolutionsToSteps(2 * 4))
+        stepper.rotate(stepper.revolutionsToSteps(2 * 4))
 
     # rotate 10 steps at startup, so clock does not appear dead to user
-    #initialRotate = 10
-    #rotateMotor(initialRotate)
-    #totalStepsRotated += initialRotate
+    # initialRotate = 10
+    # rotateMotor(initialRotate)
+    # totalStepsRotated += initialRotate
 
     while True and calibrate == False:
         timeNow = utime.time()
         elapsedTime = timeNow - startTime
-        #totalStepsRequired = secondsToSteps(stepper, elapsedTime)
-        totalStepsRequired = stepper.revolutionsToSteps(elapsedTime/secondsPerStepperRevolution)
+        # totalStepsRequired = secondsToSteps(stepper, elapsedTime)
+        totalStepsRequired = stepper.revolutionsToSteps(elapsedTime / secondsPerStepperRevolution)
         stepsToRotate = int(totalStepsRequired - stepper.totalStepsRotated)
         if debug:
             print("elapsedTime={}, totalStepsRequired={}, totalStepsRotated={}, stepsToRotate={}".format(elapsedTime, totalStepsRequired, totalStepsRotated, stepsToRotate))
