@@ -8,8 +8,11 @@ use <../scad/printed/Clock.scad>
 //$explode = 1;
 //$pose = 1;
 module Gears_test() {
-    gears(stepper=false, reduction=true, transparent=true);
+    gearReduction();
+    //gears(stepper=false, transparent=true);
+    Gears_assembly(stepper=false, transparent=true);
 }
 
 if ($preview)
-    Gears_test();
+    rotate(-60)
+        Gears_test();
