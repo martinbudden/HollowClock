@@ -28,11 +28,6 @@ tests/deps
 tests/png/*
 tests/tmp
 !tests/*.scad
-!tests/extra/*.scad
-# change to !, except for _diff, once released
-#!tests.md
-#!tests/png/*.png
-tests/png/*_diff.png
 
 HC160/assemblies/*
 HC160/bom/
@@ -46,9 +41,6 @@ HC160/*.md
 !HC160/assemblies/main_assembled.png
 #!HC160/assemblies/*.png
 HC160/assemblies/*_diff.png
-#!HC160/dxfs/*.dxf
-#!HC160/dxfs/*.png
-HC160/dxfs/*_diff.png
 #!HC160/stls/*.stl
 #!HC160/stls/*.png
 HC160/stls/*_diff.png
