@@ -1,6 +1,6 @@
+from time import sleep
 from machine import Pin, Timer
 from rp2 import PIO, StateMachine, asm_pio
-from time import sleep
 import utime
 import micropython
 
@@ -15,6 +15,7 @@ class Stepper_Motor_28BYJ_48_PIO:
     STEPS_PER_REVOLUTION = 32
     GEAR_NUMERATOR = 25792
     GEAR_DENOMINATOR = 405
+    GEARED_STEPS_PER_REVOLUTION = 2048
 
     SWITCHING_SEQUENCE_FULL_STEP = (
         (0b0001, 0b0010, 0b0100, 0b1000),
@@ -23,11 +24,11 @@ class Stepper_Motor_28BYJ_48_PIO:
         (0b1000, 0b0001, 0b0010, 0b0100),
     )
 
-    def __init__(self, id=0, basePin=25, tickIntervalMs=1000, gearing=1, debug=False):
+    def __init__(self, smId=0, basePin=25, tickIntervalMs=1000, gearing=1, debug=False):
         self.tickIntervalMs = tickIntervalMs
         self.gearing = gearing
         self.debug = debug
-        self.sm = StateMachine(id)
+        self.sm = StateMachine(smId)
         # StateMachine.init(program, freq=- 1, *, in_base=None, out_base=None, set_base=None, jmp_pin=None, sideset_base=None, in_shiftdir=None, out_shiftdir=None, push_thresh=None, pull_thresh=None)
         # minimum freq is 1908
         self.sm.init(self.prog, freq=2000, out_base=Pin(basePin))
@@ -42,7 +43,9 @@ class Stepper_Motor_28BYJ_48_PIO:
 
     # https://docs.micropython.org/en/latest/library/rp2.html#rp2.asm_pio
     @asm_pio(out_init=(PIO.OUT_LOW,) * 4, out_shiftdir=PIO.SHIFT_RIGHT)
+    # pylint: disable=no-method-argument
     def prog():
+        # pylint: disable=undefined-variable,expression-not-assigned
         pull()  # pull from TX FIFO into OSR (Output Shift Register)
         mov(x, osr)  # move stepCount into X register
 
@@ -66,10 +69,12 @@ class Stepper_Motor_28BYJ_48_PIO:
         irq(rel(0))
 
     def irqHandler(self, sm):
+        """Interrupt handler: queue another tick"""
         sm.active(0)  # Stop the state machine
         self.timer.init(mode=Timer.ONE_SHOT, period=self.tickIntervalMs, callback=self.tick)
 
-    def tick(self, tm):
+    def tick(self):
+        """IRQ callback: update elapsedTime and rotate motor"""
         elapsedTime = utime.time() - self._startTime
         totalStepsRequired = self.revolutionsToSteps(elapsedTime) * self.gearing
         stepsToRotate = int(totalStepsRequired - self._totalStepsRotated)
@@ -98,12 +103,13 @@ class Stepper_Motor_28BYJ_48_PIO:
     def revolutionsToSteps(self, revolutions):
         """Return the number of steps required for the number of revolutions specified."""
         # return revolutions * self.STEPS_PER_REVOLUTION * self.GEAR_NUMERATOR / self.GEAR_DENOMINATOR
-        return revolutions * 2048
+        return revolutions * self.GEARED_STEPS_PER_REVOLUTION
 
 
 def main():
     micropython.alloc_emergency_exception_buf(100)
-    stepper = Stepper_Motor_28BYJ_48_PIO(id=0, basePin=25, tickIntervalMs=2000, gearing=1 / (15 * 60), debug=False)
+    stepper = Stepper_Motor_28BYJ_48_PIO(smId=0, basePin=25, tickIntervalMs=2000, gearing=1 / (15 * 60), debug=False)
+    sleep(1)  # allow Pico to initialise
     stepper.resetTime()
     stepper.rotate(1)
 

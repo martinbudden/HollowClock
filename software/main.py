@@ -1,5 +1,5 @@
-from machine import Pin
 from time import sleep
+from machine import Pin
 import utime
 from micropython import const
 
@@ -14,6 +14,7 @@ class Stepper_Motor_28BYJ_48:
     STEPS_PER_REVOLUTION = const(32)
     GEAR_NUMERATOR = const(25792)
     GEAR_DENOMINATOR = const(405)
+    GEARED_STEPS_PER_REVOLUTION = const(2048)
 
     # half step gives greater precision at the cost of less torque
     SWITCHING_SEQUENCE_HALF_STEP = (
@@ -51,7 +52,7 @@ class Stepper_Motor_28BYJ_48:
         """Rotate the motor the given number of steps."""
         if debug:
             print("phase1=", self._phase)
-        for step in range(abs(steps)):
+        for _ in range(abs(steps)):
             if steps < 0:
                 self._phase = (self._phase - 1) % self._phaseCount
             if debug:
@@ -77,8 +78,8 @@ class Stepper_Motor_28BYJ_48:
         """Return the number of steps required for the number of revolutions specified."""
         # return revolutions * self.STEPS_PER_REVOLUTION * self.GEAR_NUMERATOR / self.GEAR_DENOMINATOR
         # calculated value is 2037.886
-        # However this value gains time with the stepper motor I purchased, using 2048 give correct time.
-        return revolutions * 2048
+        # However this value gains time with the stepper motor I purchased, 2048 gives the correct time.
+        return revolutions * self.GEARED_STEPS_PER_REVOLUTION
 
 
 # The clock's minute hand is geared 1/4, so one revolution of the 28BYJ-48 is 15 minutes=  15*60 seconds.
@@ -96,7 +97,7 @@ def main():
     PIN_D = Pin(9, Pin.OUT)  # Pico GPIO9 connected to stepper control pin IN4
     LED = Pin(25, Pin.OUT)  # Pico LED
 
-    PINS = [PIN_A, PIN_B, PIN_C, PIN_D]  # pin order for clockwise rotation
+    PINS = (PIN_A, PIN_B, PIN_C, PIN_D)  # pin order for clockwise rotation
 
     calibrate = False
     debug = False
