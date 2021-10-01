@@ -94,7 +94,7 @@ module driveGear(totalHeight) {
         union() {
             gear(driveToothCount, recessDepth=recessDepth);
             translate_z(gearThickness - recessDepth) {
-                bossHeight = 0.25;
+                bossHeight = 0.5;
                 gear(10, centerRadius=5/2, thickness=3.5 + recessDepth - bossHeight);
                 cylinder(r=driveShaftRadius + 1.25, h=3.5 + recessDepth, center=false);
             }
