@@ -6,6 +6,12 @@ Creative Commons - Attribution - Non-Commercial - Share Alike license [CC BY-NC-
 
 ![Main Assembly](HC160/assemblies/main_assembled.png)
 
+## Assembly instructions
+
+The assembly instructions and the BOM (parts list) are [here](HC160/readme.md).
+
+The STL files are on [thingiverse](https://www.thingiverse.com/thing:4947971).
+
 ## Improvements to original design
 
 I was having problems with the clock keeping time, mainly due to two reasons:
