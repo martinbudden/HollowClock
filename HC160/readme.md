@@ -35,12 +35,12 @@
 |      |      |      |      |       | **Vitamins** |
 |   .  |   .  |   4  |   .  |    4  |  Bolt M2 caphead x  6mm |
 |   .  |   .  |   2  |   .  |    2  |  Bolt M3 buttonhead x  6mm |
-|   .  |   .  |   4  |   2  |    6  |  Bolt M3 buttonhead x  8mm |
+|   .  |   .  |   3  |   2  |    5  |  Bolt M3 buttonhead x  8mm |
 |   .  |   .  |   1  |   .  |    1  |  Bolt M3 caphead x 16mm |
 |   .  |   1  |   .  |   .  |    1  |  Geared stepper - 28BYJ-48 5V |
 |   .  |   .  |   1  |   .  |    1  |  Raspberry Pi Pico |
 |   .  |   .  |   1  |   .  |    1  |  ZC-A0591 ULN2003 driver PCB |
-|   .  |   1  |  13  |   2  |   16  | Total vitamins count |
+|   .  |   1  |  12  |   2  |   15  | Total vitamins count |
 |      |      |      |      |       | **3D printed parts** |
 |   .  |   .  |   1  |   .  |    1  | Base.stl |
 |   1  |   .  |   .  |   .  |    1  | Clock_Face.stl |
@@ -116,7 +116,7 @@
 |Qty|Description|
 |---:|:----------|
 |4| Bolt M2 caphead x  6mm|
-|4| Bolt M3 buttonhead x  8mm|
+|3| Bolt M3 buttonhead x  8mm|
 |1| Bolt M3 caphead x 16mm|
 |1| Raspberry Pi Pico|
 |1| ZC-A0591 ULN2003 driver PCB|
@@ -133,6 +133,8 @@
 ### Assembly instructions
 
 ![Base_Stage_1_assembly](assemblies/Base_Stage_1_assembly.png)
+
+Wiring is easier if the stepper driver pcb is mounted "upside down" and attached with just 3 screws.
 
 ![Base_Stage_1_assembled](assemblies/Base_Stage_1_assembled.png)
 
