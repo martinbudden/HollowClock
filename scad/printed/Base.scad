@@ -254,6 +254,8 @@ module Base_stl(main=true, foot=true) {
             } // end rotate
 }
 
+//! Wiring is easier if the stepper driver pcb is mounted "upside down" and attached with just 3 screws.
+//
 module Base_Stage_1_assembly()
 assembly("Base_Stage_1", ngb=true) {
     rotate(180)
@@ -267,11 +269,13 @@ assembly("Base_Stage_1", ngb=true) {
         rotate([90, 0, 0])
             translate(ZC_A0591_offset + [0, 0, gs_lug_t(28BYJ_48)])
                 explode(5, true)
-                    rotate (-90) {
+                    rotate (90) {
                         pcb(ZC_A0591_X);
-                        pcb_screw_positions(ZC_A0591_X)
-                            translate_z(pcb_size(ZC_A0591_X).z)
-                                bolt(M3_dome_screw, 8);
+                        holes = pcb_holes(ZC_A0591_X);
+                        for(i = [0, 1, 3])
+                            translate(pcb_coord(ZC_A0591_X, holes[i]))
+                                translate_z(pcb_size(ZC_A0591_X).z)
+                                    bolt(M3_dome_screw, 8);
                     }
     picoSize = pcb_size(RPI_Pico);
     //#translate(picoOffset + [picoSize.x/2, footSize.y - picoSize.y/2, footSize.z - picoOffset.z])
