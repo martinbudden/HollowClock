@@ -1,5 +1,5 @@
 <a name="TOP"></a>
-
+# HollowClock
 # Hollow Clock Assembly Instructions
 
 
@@ -15,11 +15,11 @@
 
 1. [Parts list](#Parts_list)
 
-1. [Clock_Face assembly](#Clock_Face_assembly)
-1. [Gears assembly](#Gears_assembly)
-1. [Base_Stage_1 assembly](#Base_Stage_1_assembly)
-1. [Base assembly](#Base_assembly)
-1. [Main assembly](#main_assembly)
+1. [Clock Face Assembly](#Clock_Face_assembly)
+1. [Gears Assembly](#Gears_assembly)
+1. [Base Stage 1 Assembly](#Base_Stage_1_assembly)
+1. [Base Assembly](#Base_assembly)
+1. [Main Assembly](#main_assembly)
 
 <span></span>
 [Top](#TOP)
@@ -31,26 +31,26 @@
 
 
 | <span style="writing-mode: vertical-rl; text-orientation: mixed;">Clock Face</span> | <span style="writing-mode: vertical-rl; text-orientation: mixed;">Gears</span> | <span style="writing-mode: vertical-rl; text-orientation: mixed;">Base</span> | <span style="writing-mode: vertical-rl; text-orientation: mixed;">Main</span> | <span style="writing-mode: vertical-rl; text-orientation: mixed;">TOTALS</span> |  |
-|-----:|-----:|-----:|-----:|------:|:---|
-|      |      |      |      |       | **Vitamins** |
-|   .  |   .  |   4  |   .  |    4  |  Bolt M2 caphead x  6mm |
-|   .  |   .  |   2  |   .  |    2  |  Bolt M3 buttonhead x  6mm |
-|   .  |   .  |   3  |   2  |    5  |  Bolt M3 buttonhead x  8mm |
-|   .  |   .  |   1  |   .  |    1  |  Bolt M3 caphead x 16mm |
-|   .  |   1  |   .  |   .  |    1  |  Geared stepper - 28BYJ-48 5V |
-|   .  |   .  |   1  |   .  |    1  |  Raspberry Pi Pico |
-|   .  |   .  |   1  |   .  |    1  |  ZC-A0591 ULN2003 driver PCB |
-|   .  |   1  |  12  |   2  |   15  | Total vitamins count |
-|      |      |      |      |       | **3D printed parts** |
-|   .  |   .  |   1  |   .  |    1  | Base.stl |
-|   1  |   .  |   .  |   .  |    1  | Clock_Face.stl |
-|   .  |   .  |   .  |   1  |    1  | Cover.stl |
-|   .  |   1  |   .  |   .  |    1  | Drive_Gear.stl |
-|   .  |   1  |   .  |   .  |    1  | Hour_Gear.stl |
-|   1  |   .  |   .  |   .  |    1  | Hour_Hand.stl |
-|   1  |   .  |   .  |   .  |    1  | Minute_Hand.stl |
-|   .  |   .  |   1  |   .  |    1  | Reduction_Gear.stl |
-|   3  |   2  |   2  |   1  |    8  | Total 3D printed parts count |
+|---:|---:|---:|---:|---:|:---|
+|  |  |  |  | | **Vitamins** |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;4&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;4&nbsp; | &nbsp;&nbsp; Bolt M2 caphead x  6mm |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;2&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;2&nbsp; | &nbsp;&nbsp; Bolt M3 buttonhead x  6mm |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;3&nbsp; | &nbsp;&nbsp;2&nbsp; |  &nbsp;&nbsp;5&nbsp; | &nbsp;&nbsp; Bolt M3 buttonhead x  8mm |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp; Bolt M3 caphead x 16mm |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp; Geared stepper - 28BYJ-48 5V |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp; Raspberry Pi Pico |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp; ZC-A0591 ULN2003 driver PCB |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;12&nbsp; | &nbsp;&nbsp;2&nbsp; | &nbsp;&nbsp;15&nbsp; | &nbsp;&nbsp;Total vitamins count |
+|  |  |  |  | | **3D printed parts** |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Base.stl |
+| &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Clock_Face.stl |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Cover.stl |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Drive_Gear.stl |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Hour_Gear.stl |
+| &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Hour_Hand.stl |
+| &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Minute_Hand.stl |
+| &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;.&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;.&nbsp; |  &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;Reduction_Gear.stl |
+| &nbsp;&nbsp;3&nbsp; | &nbsp;&nbsp;2&nbsp; | &nbsp;&nbsp;2&nbsp; | &nbsp;&nbsp;1&nbsp; | &nbsp;&nbsp;8&nbsp; | &nbsp;&nbsp;Total 3D printed parts count |
 
 <span></span>
 [Top](#TOP)
@@ -58,7 +58,7 @@
 ---
 <a name="Clock_Face_assembly"></a>
 
-## Clock_Face assembly
+## Clock Face Assembly
 
 ### 3D Printed parts
 
@@ -80,7 +80,7 @@
 ---
 <a name="Gears_assembly"></a>
 
-## Gears assembly
+## Gears Assembly
 
 ### Vitamins
 
@@ -109,7 +109,7 @@
 ---
 <a name="Base_Stage_1_assembly"></a>
 
-## Base_Stage_1 assembly
+## Base Stage 1 Assembly
 
 ### Vitamins
 
@@ -144,7 +144,7 @@ Wiring is easier if the stepper driver pcb is mounted "upside down" and attached
 ---
 <a name="Base_assembly"></a>
 
-## Base assembly
+## Base Assembly
 
 ### Vitamins
 
@@ -173,7 +173,7 @@ Wiring is easier if the stepper driver pcb is mounted "upside down" and attached
 ---
 <a name="main_assembly"></a>
 
-## main assembly
+## Main Assembly
 
 ### Vitamins
 
