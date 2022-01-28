@@ -35,7 +35,7 @@ function clockOffsetY() = (_baseSize.y - clockHousingSize.y)/2;
 function clockHousingDiameter() = _clockOD;// + clockHousingSize.x + clockHousingTolerance;
 function clockPosZ() = _baseSize.z + clockHousingDiameter()/2;
 
-function clockHandRingThickness() = 1;
+function clockHandRingThickness() = 0.9;
 gearThickness = 3;
 function gearThickness() = gearThickness;
 gearRotate = 90;
@@ -231,7 +231,7 @@ module Clock_Face_stl() {
 module Hour_Hand_stl(highlight=false) {
     color(pp2_colour)
         stl("Hour_Hand") {
-            gear(handsToothCount, _clockID/2, faceThickness - 0.5);
+            gear(handsToothCount, _clockID/2, faceThickness - 0.4);
             tube(or=_clockID/2 + 1, ir=_clockID/2, h=faceThickness, center=false);
             if (highlight)
                 #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
@@ -252,7 +252,7 @@ module Hour_Hand_stl(highlight=false) {
 module Minute_Hand_stl(highlight=false) {
     color(pp3_colour)
         stl("Minute_Hand") {
-            gear(handsToothCount, _clockID/2, faceThickness - 0.5);
+            gear(handsToothCount, _clockID/2, faceThickness - 0.4);
             tube(or=_clockID/2 + 1, ir=_clockID/2, h=faceThickness, center=false);
             if (highlight)
                 #tube(or=_clockOD/2, ir=_clockID/2, h=clockHandRingThickness(), center=false);
